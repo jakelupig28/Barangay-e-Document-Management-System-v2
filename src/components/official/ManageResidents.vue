@@ -25,9 +25,10 @@
         <thead class="bg-light">
           <tr>
             <th class="fw-semibold text-muted small py-3 ps-4">RESIDENT</th>
-            <th class="fw-semibold text-muted small py-3">ADDRESS</th>
+            <!-- <th class="fw-semibold text-muted small py-3">SITIO</th> -->
             <th class="fw-semibold text-muted small py-3">CONTACT</th>
             <th class="fw-semibold text-muted small py-3">REGISTERED</th>
+             <th class="fw-semibold text-muted small py-3">ACTION</th>
             <th class="fw-semibold text-muted small py-3 pe-4"></th>
           </tr>
         </thead>
@@ -35,8 +36,8 @@
           <tr v-for="resident in paginatedResidents" :key="resident.id" class="border-top">
             <td class="py-3 ps-4">
               <div class="d-flex align-items-center">
-                <div class=" bg-light-primary rounded-circle d-flex align-items-center justify-content-center me-3">
-                  <i class=" text-primary"></i>
+                <div class="bg-light-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                  <i class="fas fa-user text-primary"></i>
                 </div>
                 <div>
                   <div class="fw-semibold">{{ resident.name }}</div>
@@ -44,12 +45,12 @@
                 </div>
               </div>
             </td>
-            <td class="py-3">{{ resident.address }}</td>
+            <!-- <td class="py-3">{{ resident.address }}</td> -->
             <td class="py-3">{{ resident.contact }}</td>
             <td class="py-3">{{ formatDate(resident.createdAt) }}</td>
             <td class="py-3 pe-4">
               <button class="btn btn-sm btn-light rounded-pill px-3" @click="viewResident(resident.id)">
-                <i class=" me-1"></i> View Details
+                <i class="fas fa-eye me-1"></i> View Details
               </button>
             </td>
           </tr>
@@ -57,7 +58,7 @@
       </table>
     </div>
 
-    <!-- Pagination - Now aligned left with search -->
+    <!-- Pagination -->
     <div class="d-flex justify-content-between align-items-center mt-4">
       <div class="text-muted small">
         Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, residents.length) }} of {{ residents.length }} residents
@@ -80,87 +81,12 @@
         </ul>
       </nav>
     </div>
-
-    <!-- Resident Detail Modal -->
-    <div v-if="selectedResident" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1050;">
-      <div class="modal-dialog modal-lg modal-dialog-centered" style="position: relative; top: 50%; transform: translateY(-50%);">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
-          <div class="modal-header bg-primary text-white border-0 py-3 px-4">
-            <div class="flex-grow-1">
-              <h5 class="modal-title mb-0">{{ selectedResident.name }}</h5>
-              <small class="opacity-75">{{ selectedResident.email }}</small>
-            </div>
-            <button type="button" class="btn-close btn-close-white opacity-100" @click="selectedResident = null"></button>
-          </div>
-          <div class="modal-body p-4">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <h6 class="text-uppercase text-muted small mb-3">Personal Information</h6>
-                <div class="d-flex align-items-start mb-3">
-                  <div class="me-3 text-primary mt-1">
-                    <i class="fas fa-home"></i>
-                  </div>
-                  <div>
-                    <div class="small text-muted mb-1">Address</div>
-                    <div class="fw-semibold">{{ selectedResident.address }}</div>
-                  </div>
-                </div>
-                <div class="d-flex align-items-start mb-3">
-                  <div class="me-3 text-primary mt-1">
-                    <i class="fas fa-phone"></i>
-                  </div>
-                  <div>
-                    <div class="small text-muted mb-1">Contact Number</div>
-                    <div class="fw-semibold">{{ selectedResident.contact }}</div>
-                  </div>
-                </div>
-                <div class="d-flex align-items-start">
-                  <div class="me-3 text-primary mt-1">
-                    <i class="fas fa-calendar-alt"></i>
-                  </div>
-                  <div>
-                    <div class="small text-muted mb-1">Birthdate</div>
-                    <div class="fw-semibold">{{ formatDate(selectedResident.birthdate) }}</div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <h6 class="text-uppercase text-muted small mb-3">Registration Details</h6>
-                <div class="d-flex align-items-start mb-3">
-                  <div class="me-3 text-primary mt-1">
-                    <i class="fas fa-calendar-check"></i>
-                  </div>
-                  <div>
-                    <div class="small text-muted mb-1">Registered On</div>
-                    <div class="fw-semibold">{{ formatDate(selectedResident.createdAt) }}</div>
-                  </div>
-                </div>
-                <div class="d-flex align-items-start">
-                  <div class="me-3 text-primary mt-1">
-                    <i class="fas fa-id-card"></i>
-                  </div>
-                  <div>
-                    <div class="small text-muted mb-1">Resident ID</div>
-                    <div class="fw-semibold">{{ selectedResident.id }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer border-0 bg-light justify-content-end py-3 px-4">
-            <button class="btn btn-outline-secondary rounded-pill px-4 me-2" @click="selectedResident = null">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
 import { db } from '@/firebase/config'
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore'
+import { collection, getDocs, query, where } from 'firebase/firestore'
 
 export default {
   data() {
@@ -170,7 +96,6 @@ export default {
       searchQuery: '',
       currentPage: 1,
       pageSize: 10,
-      selectedResident: null,
       maxVisiblePages: 5
     }
   },
@@ -222,16 +147,8 @@ export default {
       this.currentPage = 1
     },
 
-    async viewResident(id) {
-      const docRef = doc(db, 'users', id)
-      const docSnap = await getDoc(docRef)
-
-      if (docSnap.exists()) {
-        this.selectedResident = {
-          id: docSnap.id,
-          ...docSnap.data()
-        }
-      }
+    viewResident(id) {
+      this.$router.push(`/official/resident/${id}`)
     },
 
     nextPage() {
@@ -284,11 +201,6 @@ export default {
   vertical-align: middle;
 }
 
-.avatar-sm {
-  width: 36px;
-  height: 36px;
-}
-
 .bg-light-primary {
   background-color: rgba(13, 110, 253, 0.1) !important;
 }
@@ -303,7 +215,6 @@ export default {
   transform: translateY(-1px);
 }
 
-/* Modern Pagination */
 .pagination {
   --bs-pagination-padding-x: 0.75rem;
   --bs-pagination-padding-y: 0.375rem;
@@ -336,41 +247,12 @@ export default {
   opacity: 0.5;
 }
 
-/* Status text */
-.text-muted small {
-  font-size: 0.875rem;
-}
-
-/* Modal */
-.modal-content {
-  border: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-}
-
-.modal-backdrop {
-  background-color: rgba(0,0,0,0.5);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-}
-
 @media (max-width: 768px) {
   .table-responsive {
     border: 1px solid #dee2e6;
     border-radius: 8px;
   }
   
-  .modal-body .row > .col-md-6 {
-    width: 100%;
-  }
-  
-  .modal-header, .modal-body, .modal-footer {
-    padding: 1rem !important;
-  }
-
-  /* Stack pagination on mobile */
   .d-flex.justify-content-between {
     flex-direction: column;
     gap: 1rem;

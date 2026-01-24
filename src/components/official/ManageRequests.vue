@@ -1,7 +1,7 @@
 <template>
   <div class="manage-requests">
     <div class="header">
-      <h2><i class="fas fa-file-alt"></i> Document Requests</h2>
+      <h2>Document Requests</h2>
     </div>
 
     <div v-if="error" class="error-message">
@@ -56,30 +56,28 @@
         <thead>
           <tr>
             <th>Request ID</th>
-            <th>Document Type</th>
-            <th>Resident Name</th>
-            <th>Date Requested</th>
-            <th>Purpose</th>
             <th>Status</th>
+            <th>Date Requested</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="request in filteredRequests" :key="request.id">
             <td>{{ request.id || request.documentId || 'N/A' }}</td>
-            <td>{{ getDocumentTypeLabel(request.type || request.documentType) }}</td>
-            <td>{{ request.userName }}</td>
-            <td>{{ formatDate(request.createdAt) }}</td>
-            <td>{{ request.purpose || 'N/A' }}</td>
             <td>
               <span :class="`status-badge ${request.status}`">
                 <i :class="statusIcons[request.status]"></i>
                 {{ request.status }}
               </span>
             </td>
+            <td>{{ formatDate(request.createdAt) }}</td>
             <td>
               <div class="action-buttons">
-                <button class="action-btn view" @click="viewRequest(request)">
+                <!-- In the actions column of your table -->
+                <button 
+                  class="action-btn view" 
+                  @click="$router.push(`/official/requests/${request.id}`)"
+                >
                   <i class="fas fa-eye"></i>
                   <span class="btn-text">View</span>
                 </button>
@@ -126,93 +124,136 @@
     </div>
 
     <!-- Request Details Modal -->
-    <div class="modal" :class="{ show: selectedRequest !== null }" v-if="selectedRequest">
+    <div class="modal" :class="{ show: showViewModal }" v-if="showViewModal">
       <div class="modal-content">
         <div class="modal-header">
           <h3>Request Details</h3>
-          <button class="close-btn" @click="closeModal" :disabled="isUpdating">×</button>
+          <button class="close-btn" @click="closeViewModal" :disabled="isUpdating">×</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" v-if="selectedRequest">
           <div v-if="modalError" class="error-message">
             <p>{{ modalError }}</p>
           </div>
-          <div class="detail-row">
-            <label>Request ID:</label>
-            <div>{{ selectedRequest.id || selectedRequest.documentId || 'N/A' }}</div>
-          </div>
-          <div class="detail-row">
-            <label>Resident:</label>
-            <div>{{ selectedRequest.userName }}</div>
-          </div>
-          <div class="detail-row">
-            <label>Contact:</label>
-            <div>{{ selectedRequest.contact || 'N/A' }}</div>
-          </div>
-          <div class="detail-row">
-            <label>Address:</label>
-            <div>{{ selectedRequest.address || 'N/A' }}</div>
-          </div>
-          <div class="detail-row">
-            <label>Document Type:</label>
-            <div>{{ getDocumentTypeLabel(selectedRequest.type || selectedRequest.documentType) }}</div>
-          </div>
-          <div class="detail-row">
-            <label>Purpose:</label>
-            <div>{{ selectedRequest.purpose || 'N/A' }}</div>
-          </div>
-          <div class="detail-row">
-            <label>Date Requested:</label>
-            <div>{{ formatDate(selectedRequest.createdAt) }}</div>
-          </div>
-          <div class="detail-row">
-            <label>Status:</label>
-            <div>
-              <span :class="`status-badge ${selectedRequest.status}`">
-                <i :class="statusIcons[selectedRequest.status]"></i>
-                {{ selectedRequest.status }}
-              </span>
+          
+          <div class="detail-grid">
+            <!-- Basic Information Section -->
+            <div class="section-header">
+              <i class="fas fa-user"></i>
+              <h4>Resident Information</h4>
             </div>
-          </div>
-          <div class="detail-row" v-if="selectedRequest.businessName">
-            <label>Business Name:</label>
-            <div>{{ selectedRequest.businessName }}</div>
-          </div>
-          <div class="detail-row" v-if="selectedRequest.businessAddress">
-            <label>Business Address:</label>
-            <div>{{ selectedRequest.businessAddress }}</div>
-          </div>
-          <div class="detail-row" v-if="selectedRequest.notes">
-            <label>Notes:</label>
-            <div>{{ selectedRequest.notes }}</div>
+            
+            <div class="detail-item">
+              <label>Request ID:</label>
+              <div class="detail-value highlight">{{ selectedRequest.id || selectedRequest.documentId || 'N/A' }}</div>
+            </div>
+            
+            <div class="detail-item">
+              <label>Resident Name:</label>
+              <div class="detail-value">{{ selectedRequest.userName }}</div>
+            </div>
+            
+            <div class="detail-item">
+              <label>Contact:</label>
+              <div class="detail-value">{{ selectedRequest.contact || 'N/A' }}</div>
+            </div>
+            
+            <div class="detail-item full-width">
+              <label>Address:</label>
+              <div class="detail-value">{{ selectedRequest.address || 'N/A' }}</div>
+            </div>
+
+            <!-- Document Information Section -->
+            <div class="section-header">
+              <i class="fas fa-file-alt"></i>
+              <h4>Document Information</h4>
+            </div>
+            
+            <div class="detail-item">
+              <label>Document Type:</label>
+              <div class="detail-value">
+                <span class="document-type-badge">
+                  <i :class="documentTypeIcons[selectedRequest.type || selectedRequest.documentType]"></i>
+                  {{ getDocumentTypeLabel(selectedRequest.type || selectedRequest.documentType) }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="detail-item full-width">
+              <label>Purpose:</label>
+              <div class="purpose-text">{{ selectedRequest.purpose || 'N/A' }}</div>
+            </div>
+            
+            <div class="detail-item">
+              <label>Date Requested:</label>
+              <div class="detail-value">{{ formatDate(selectedRequest.createdAt) }}</div>
+            </div>
+            
+            <div class="detail-item">
+              <label>Status:</label>
+              <div>
+                <span :class="`status-badge large ${selectedRequest.status}`">
+                  <i :class="statusIcons[selectedRequest.status]"></i>
+                  {{ selectedRequest.status }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Business Information (Conditional) -->
+            <div v-if="selectedRequest.businessName || selectedRequest.businessAddress" class="section-header">
+              <i class="fas fa-building"></i>
+              <h4>Business Information</h4>
+            </div>
+            
+            <div v-if="selectedRequest.businessName" class="detail-item">
+              <label>Business Name:</label>
+              <div class="detail-value">{{ selectedRequest.businessName }}</div>
+            </div>
+            
+            <div v-if="selectedRequest.businessAddress" class="detail-item full-width">
+              <label>Business Address:</label>
+              <div class="detail-value">{{ selectedRequest.businessAddress }}</div>
+            </div>
+
+            <!-- Additional Notes -->
+            <div v-if="selectedRequest.notes" class="section-header">
+              <i class="fas fa-sticky-note"></i>
+              <h4>Additional Notes</h4>
+            </div>
+            
+            <div v-if="selectedRequest.notes" class="detail-item full-width">
+              <div class="notes-text">{{ selectedRequest.notes }}</div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button
-            class="action-btn approve"
-            @click="updateRequestStatus(selectedRequest.id, 'approved')"
-            v-if="selectedRequest.status === 'pending'"
-            :disabled="isUpdating"
-          >
-            <i class="fas fa-check"></i> Approve
-          </button>
-          <button
-            class="action-btn reject"
-            @click="updateRequestStatus(selectedRequest.id, 'rejected')"
-            v-if="selectedRequest.status === 'pending'"
-            :disabled="isUpdating"
-          >
-            <i class="fas fa-times"></i> Reject
-          </button>
-          <button
-            class="action-btn print"
-            @click="generateDocument(selectedRequest)"
-            v-if="selectedRequest.status === 'approved'"
-          >
-            <i class="fas fa-print"></i> Generate Document
-          </button>
-          <button class="action-btn close" @click="closeModal" :disabled="isUpdating">
-            <i class="fas fa-times"></i> Close
-          </button>
+          <div class="footer-actions">
+            <button
+              class="action-btn approve"
+              @click="handleStatusUpdate('approved')"
+              v-if="selectedRequest && selectedRequest.status === 'pending'"
+              :disabled="isUpdating"
+            >
+              <i class="fas fa-check"></i> Approve Request
+            </button>
+            <button
+              class="action-btn reject"
+              @click="handleStatusUpdate('rejected')"
+              v-if="selectedRequest && selectedRequest.status === 'pending'"
+              :disabled="isUpdating"
+            >
+              <i class="fas fa-times"></i> Reject Request
+            </button>
+            <button
+              class="action-btn print"
+              @click="generateDocument(selectedRequest)"
+              v-if="selectedRequest && selectedRequest.status === 'approved'"
+            >
+              <i class="fas fa-print"></i> Generate Document
+            </button>
+            <button class="action-btn close" @click="closeViewModal" :disabled="isUpdating">
+              <i class="fas fa-times"></i> Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -277,6 +318,7 @@ export default {
     const documentTypeFilter = ref('');
     const currentFilter = ref('all');
     const selectedRequest = ref(null);
+    const showViewModal = ref(false);
     const showPrintableDocument = ref(false);
     const currentDocumentData = ref(null);
     
@@ -299,6 +341,15 @@ export default {
       pending: 'fas fa-clock',
       approved: 'fas fa-check-circle',
       rejected: 'fas fa-times-circle',
+    };
+
+    const documentTypeIcons = {
+      'business-permit': 'fas fa-building',
+      'barangay-clearance': 'fas fa-file-contract',
+      'barangay-id': 'fas fa-id-card',
+      'residency-certificate': 'fas fa-home',
+      'indigency-certificate': 'fas fa-hands-helping',
+      'other': 'fas fa-file'
     };
 
     const barangayInfo = ref({
@@ -462,6 +513,12 @@ export default {
       }
     };
 
+    const handleStatusUpdate = async (status) => {
+      if (selectedRequest.value) {
+        await updateRequestStatus(selectedRequest.value.id, status);
+      }
+    };
+
     const generateDocument = (request) => {
       currentDocumentData.value = {
         ...request,
@@ -491,12 +548,14 @@ export default {
       }, 3000);
     };
 
-    const viewRequest = (request) => {
+    const openViewModal = (request) => {
       selectedRequest.value = request;
+      showViewModal.value = true;
       modalError.value = null;
     };
 
-    const closeModal = () => {
+    const closeViewModal = () => {
+      showViewModal.value = false;
       selectedRequest.value = null;
       modalError.value = null;
     };
@@ -584,8 +643,10 @@ export default {
       documentTypeFilter,
       currentFilter,
       selectedRequest,
+      showViewModal,
       documentTypes,
       statusIcons,
+      documentTypeIcons,
       showToast,
       toastMessage,
       toastIcon,
@@ -594,8 +655,9 @@ export default {
       currentDocumentData,
       barangayInfo,
       updateRequestStatus,
-      viewRequest,
-      closeModal,
+      handleStatusUpdate,
+      openViewModal,
+      closeViewModal,
       filterByStatus,
       filterRequests,
       searchRequests,
@@ -772,21 +834,6 @@ th {
   top: 0;
 }
 
-.resident-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.name {
-  font-weight: 500;
-}
-
-.contact {
-  font-size: 0.8rem;
-  color: #7f8c8d;
-}
-
 .status-badge {
   padding: 0.4rem 0.8rem;
   border-radius: 20px;
@@ -796,6 +843,11 @@ th {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.status-badge.large {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
 }
 
 .status-badge.pending {
@@ -895,6 +947,16 @@ th {
   background: #5a6268;
 }
 
+.action-btn.print {
+  background: #17a2b8;
+  color: white;
+}
+
+.action-btn.print:hover:not(:disabled) {
+  background: #138496;
+  transform: translateY(-1px);
+}
+
 .empty-state {
   padding: 3rem;
   text-align: center;
@@ -919,7 +981,7 @@ th {
   font-size: 0.9rem;
 }
 
-/* Modal Styles */
+/* === IMPROVED MODAL STYLES === */
 .modal {
   position: fixed;
   top: 0;
@@ -934,6 +996,7 @@ th {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s;
+  padding: 1rem;
 }
 
 .modal.show {
@@ -943,12 +1006,12 @@ th {
 
 .modal-content {
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   width: 100%;
-  max-width: 600px;
+  max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   transform: translateY(-20px);
   transition: transform 0.3s;
 }
@@ -958,61 +1021,166 @@ th {
 }
 
 .modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #eee;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e9ecef;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.5rem;
-  color: #2c3e50;
+  font-weight: 600;
 }
 
 .close-btn {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #7f8c8d;
-  transition: color 0.2s;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
 }
 
 .close-btn:hover:not(:disabled) {
-  color: #2c3e50;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .close-btn:disabled {
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 2rem;
 }
 
-.detail-row {
+/* Detail Grid Layout */
+.detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e9ecef;
 }
 
-.detail-row label {
-  display: block;
-  font-weight: 500;
-  color: #7f8c8d;
-  margin-bottom: 0.25rem;
+.section-header i {
+  color: #667eea;
+  font-size: 1.2rem;
 }
 
-.detail-row div {
+.section-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-item label {
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  color: #2c3e50;
+  font-size: 1rem;
+  word-break: break-word;
+}
+
+.detail-value.highlight {
+  font-weight: 600;
+  color: #667eea;
   font-size: 1.1rem;
 }
 
+.purpose-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #28a745;
+  font-size: 1rem;
+}
+
+.notes-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+  background: #fff3cd;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #ffc107;
+  font-size: 1rem;
+  color: #856404;
+}
+
+.document-type-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: #e9ecef;
+  color: #495057;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .modal-footer {
-  padding: 1.5rem;
-  border-top: 1px solid #eee;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+.footer-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.footer-actions .action-btn {
+  min-width: 140px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+/* Printable Document Modal */
+.printable-modal {
+  max-width: 900px;
 }
 
 /* Toast Notification */
@@ -1053,6 +1221,7 @@ th {
   font-size: 1.2rem;
 }
 
+/* Responsive Design */
 @media (max-width: 768px) {
   .filters {
     flex-direction: column;
@@ -1078,6 +1247,50 @@ th {
   .modal-content {
     width: 95%;
     margin: 0 auto;
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .footer-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .footer-actions .action-btn {
+    min-width: 100%;
+    justify-content: center;
+  }
+
+  .detail-grid {
+    gap: 1rem;
+  }
+
+  .section-header {
+    margin-bottom: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .manage-requests {
+    padding: 1rem;
+  }
+
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    padding: 0.5rem;
   }
 }
 </style>

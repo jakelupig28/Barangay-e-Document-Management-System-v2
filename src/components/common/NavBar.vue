@@ -127,7 +127,7 @@ export default {
         { to: '/about', text: 'About' },
         { to: '/services', text: 'Services' },
         { to: '/announcements', text: 'Announcements' },
-        { to: '/contact', text: 'Contact' },
+        { to: '/eReports', text: 'eReports' },
       ],
     };
   },

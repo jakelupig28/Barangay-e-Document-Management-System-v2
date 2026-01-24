@@ -5,10 +5,14 @@
         <img src="@/assets/bis-logo.png" alt="Barangay Logo" class="logo-img" />
       </div>
       <div class="header-text">
-        <h1>OFFICE OF THE BARANGAY CAPTAIN</h1>
-        <h2>BARANGAY {{ barangayName.toUpperCase() }}</h2>
+        <h1>OFFICE OF THE BARANGAY</h1>
+        <h2>{{ barangayName.toUpperCase() }}</h2>
         <p class="barangay-info">{{ barangayAddress }}</p>
+        <p class="barangay-info">{{ barangayFullAddress }}</p>
         <p class="barangay-info">Contact: {{ barangayContact }}</p>
+      </div>
+            <div class="logo">
+        <img src="@/assets/bagongpilipinas.png" alt="ph seals" class="logo-img" />
       </div>
     </div>
 
@@ -17,10 +21,6 @@
     </div>
 
     <div class="document-body">
-      <div class="document-number">
-        <p>Document No: <strong>{{ documentNumber }}</strong></p>
-        <p>Date Issued: <strong>{{ formatDate(new Date()) }}</strong></p>
-      </div>
 
       <div class="to-whom">
         <p>TO WHOM IT MAY CONCERN:</p>
@@ -29,9 +29,8 @@
       <div class="content">
         <p class="document-text">
           This is to certify that <strong>{{ name }}</strong>, 
-          of legal age, is a bona fide resident of 
-          <strong>{{ barangayName }}</strong>, 
-          {{ residentAddress }}.
+          of legal age, is a bona fide resident of barangay
+          <strong>{{ barangayName }}</strong>.
         </p>
 
         <p class="document-text" v-if="documentType === 'barangay-clearance'">
@@ -80,15 +79,6 @@
 
     <div class="document-footer">
       <p class="footer-text">Not valid without the official seal of Barangay {{ barangayName }}</p>
-    </div>
-
-    <div class="print-controls" v-if="!isPrinting">
-      <button @click="printDocument" class="print-btn">
-        <i class="fas fa-print"></i> Print Document
-      </button>
-      <button @click="closeDocument" class="close-btn">
-        <i class="fas fa-times"></i> Close
-      </button>
     </div>
   </div>
 </template>
@@ -139,6 +129,11 @@ export default {
 
     // Barangay info
     const barangayName = computed(() => props.barangayInfo.name);
+    const barangayFullAddress = computed(() => {
+      const city = props.barangayInfo.city || '';
+      const province = props.barangayInfo.province || '';
+      return [city, province].filter(Boolean).join(', ') || 'Unknown Location';
+    });
     const barangayAddress = computed(() => props.barangayInfo.address);
     const barangayContact = computed(() => props.barangayInfo.contact);
     const barangayCaptain = computed(() => props.barangayInfo.captain);
@@ -217,6 +212,7 @@ export default {
       businessAddress,
       currentDay,
       currentMonth,
+      barangayFullAddress,
       currentYear,
       expiryDate,
       barangayName,
@@ -233,17 +229,6 @@ export default {
 </script>
 
 <style scoped>
-.printable-document {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2.5rem;
-  background: white;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-  font-family: 'Times New Roman', Times, serif;
-  line-height: 1.6;
-  color: #333;
-  border: 1px solid #e0e0e0;
-}
 
 .document-header {
   display: flex;

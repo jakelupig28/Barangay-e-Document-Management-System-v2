@@ -1,10 +1,7 @@
 <template>
   <div class="dashboard-container">
     <!-- Header Section -->
-       <br>
-        <br>
-          <br>
-        <br>
+
     <div class="dashboard-header">
       <div class="header-content">
         <div>
@@ -114,80 +111,121 @@
       <p>Check back later for personalized updates from your barangay</p>
     </div>
 
-    <!-- Request Status Modal -->
-    <div v-if="showRequestModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-container">
-        <div class="modal-header">
-          <h3>Request Status</h3>
-          <button class="modal-close" @click="closeModal">×</button>
-        </div>
-        <div class="modal-body">
-          <!-- Search Form -->
-          <div class="form-group">
-            <label for="requestId">Enter Request ID</label>
-            <input 
-              type="text" 
-              id="requestId" 
-              v-model="requestIdInput" 
-              placeholder="e.g. BRGY-000000-0000"
-              @keyup.enter="checkRequestStatus"
-            >
-          </div>
+<!-- Request Status Modal - Updated to handle both Requests and Reports -->
+<div v-if="showRequestModal" class="modal-overlay" @click.self="closeModal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Request & Report Status</h3>
+      <button class="modal-close" @click="closeModal">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Search Form -->
+      <div class="form-group">
+        <label for="requestId">Enter Request ID or Report ID</label>
+        <input 
+          type="text" 
+          id="requestId" 
+          v-model="requestIdInput" 
+          placeholder="e.g. BRGY-000000-0000 or RPT-000000-0000"
+          @keyup.enter="checkRequestStatus"
+        >
+        <p class="input-hint">Enter your Request ID (starts with BRGY) or Report ID (starts with RPT)</p>
+      </div>
 
-          <!-- Request Details -->
-          <div v-if="requestDetails" class="status-result">
-            <!-- Status Message -->
-            <div class="status-message-container" :class="requestDetails.status">
-              <div>
-                <h4 class="status-title">
-                  <span v-if="requestDetails.status === 'approved'">Ready for Pickup</span>
-                  <span v-else-if="requestDetails.status === 'pending'">Processing Request</span>
-                  <span v-else-if="requestDetails.status === 'rejected'">Request Rejected</span>
-                </h4>
-                <p class="status-message">
-                  <span v-if="requestDetails.status === 'approved'">
-                    Your document is ready for pickup at the barangay hall. Please bring a valid ID.
-                  </span>
-                  <span v-else-if="requestDetails.status === 'pending'">
-                    Your request is being processed. Typically takes 2-3 business days.
-                  </span>
-                  <span v-else-if="requestDetails.status === 'rejected'">
-                    Your request was not approved. Contact the barangay office for details.
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            <!-- Pickup Instructions (if approved) -->
-            <div v-if="requestDetails.status === 'approved'" class="pickup-instructions">
-              <h5>Pickup Instructions:</h5>
-              <ul>
-                <li>Bring a valid government-issued ID</li>
-                <li>Office hours: 8:00 AM - 5:00 PM (Monday to Friday)</li>
-                <li>Location: Barangay Hall Main Office</li>
-                <li>Contact: (02) 123-4567 if you have questions</li>
-              </ul>
-            </div>
-          </div>
-          
-          <!-- Error Message -->
-          <div v-if="errorMessage" class="error-message">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            {{ errorMessage }}
+      <!-- Request Details -->
+      <div v-if="requestDetails" class="status-result">
+        <!-- Status Message for Requests -->
+        <div v-if="isRequest" class="status-message-container" :class="requestDetails.status">
+          <div>
+            <h4 class="status-title">
+              <span v-if="requestDetails.status === 'approved'">Ready for Pickup</span>
+              <span v-else-if="requestDetails.status === 'pending'">Processing Request</span>
+              <span v-else-if="requestDetails.status === 'rejected'">Request Rejected</span>
+              <span v-else>{{ requestDetails.status }}</span>
+            </h4>
+            <p class="status-message">
+              <span v-if="requestDetails.status === 'approved'">
+                Your document is ready for pickup at the barangay hall. Please bring a valid ID.
+              </span>
+              <span v-else-if="requestDetails.status === 'pending'">
+                Your request is being processed. Typically takes 2-3 business days.
+              </span>
+              <span v-else-if="requestDetails.status === 'rejected'">
+                Your request was not approved. Contact the barangay office for details.
+              </span>
+              <span v-else>
+                Current status: {{ requestDetails.status }}
+              </span>
+            </p>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="closeModal">Close</button>
-          <button class="btn-primary" @click="checkRequestStatus">
-            {{ requestDetails ? 'Check Another' : 'Check Status' }}
-          </button>
+
+        <!-- Status Message for Reports -->
+        <div v-else-if="isReport" class="status-message-container" :class="requestDetails.status">
+          <div>
+            <h4 class="status-title">
+              <span v-if="requestDetails.status === 'resolved'">Report Resolved</span>
+              <span v-else-if="requestDetails.status === 'in_progress'">Report In Progress</span>
+              <span v-else-if="requestDetails.status === 'pending'">Report Submitted</span>
+              <span v-else-if="requestDetails.status === 'rejected'">Report Closed</span>
+              <span v-else>{{ requestDetails.status }}</span>
+            </h4>
+            <p class="status-message">
+              <span v-if="requestDetails.status === 'resolved'">
+                Your report has been resolved. Thank you for your contribution to the community.
+              </span>
+              <span v-else-if="requestDetails.status === 'in_progress'">
+                Your report is currently being addressed by our team.
+              </span>
+              <span v-else-if="requestDetails.status === 'pending'">
+                Your report has been submitted and is awaiting review.
+              </span>
+              <span v-else-if="requestDetails.status === 'rejected'">
+                Your report has been closed. Contact the barangay office for details.
+              </span>
+              <span v-else>
+                Current status: {{ requestDetails.status }}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Pickup Instructions (if request is approved) -->
+        <div v-if="isRequest && requestDetails.status === 'approved'" class="pickup-instructions">
+          <h5>Pickup Instructions:</h5>
+          <ul>
+            <li>Bring a valid government-issued ID</li>
+            <li>Office hours: 8:00 AM - 5:00 PM (Monday to Friday)</li>
+            <li>Location: Barangay Hall Main Office</li>
+            <li>Contact: (02) 123-4567 if you have questions</li>
+          </ul>
+        </div>
+
+        <!-- Resolution Notes (if report is resolved) -->
+        <div v-if="isReport && requestDetails.status === 'resolved' && requestDetails.resolutionNotes" class="resolution-notes">
+          <h5>Resolution Notes:</h5>
+          <p>{{ requestDetails.resolutionNotes }}</p>
         </div>
       </div>
+      
+      <!-- Error Message -->
+      <div v-if="errorMessage" class="error-message">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        {{ errorMessage }}
+      </div>
     </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" @click="closeModal">Close</button>
+      <button class="btn-primary" @click="checkRequestStatus">
+        {{ requestDetails ? 'Check Another' : 'Check Status' }}
+      </button>
+    </div>
+  </div>
+</div>
 
     <!-- Announcement Details Modal -->
     <div v-if="showAnnouncementModal" class="modal-overlay" @click.self="closeAnnouncementModal">
@@ -230,6 +268,7 @@ export default {
       requestDetails: null,
       errorMessage: '',
       userRequests: [],
+      userReports: [], // New: store user reports
       userProfile: null,
       loadingAnnouncements: false,
       showAnnouncementModal: false,
@@ -263,7 +302,6 @@ export default {
     filteredResidentSpecificAnnouncements() {
       return this.announcements
         .filter(a => {
-          // Only include announcements specifically targeted to this resident via recipientIds
           return a.recipientIds?.length && a.recipientIds.includes(this.currentUserId);
         })
         .sort((a, b) => {
@@ -271,6 +309,13 @@ export default {
           const dateB = b.createdAt?.seconds || (b.createdAt instanceof Date ? b.createdAt.getTime() / 1000 : 0);
           return dateB - dateA;
         });
+    },
+    // New computed properties to determine type
+    isRequest() {
+      return this.requestDetails && this.requestDetails.id && this.requestDetails.id.startsWith('BRGY');
+    },
+    isReport() {
+      return this.requestDetails && this.requestDetails.id && this.requestDetails.id.startsWith('RPT');
     }
   },
   methods: {
@@ -295,7 +340,7 @@ export default {
     },
     formatRequestDate(timestamp) {
       if (!timestamp) return 'N/A';
-      const date = timestamp.toDate();
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
       const options = { 
         year: 'numeric', 
         month: 'short', 
@@ -308,6 +353,12 @@ export default {
     formatDocumentType(type) {
       if (!type) return 'N/A';
       return type.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+    },
+    formatReportType(type) {
+      if (!type) return 'N/A';
+      return type.split('_').map(word => 
         word.charAt(0).toUpperCase() + word.slice(1)
       ).join(' ');
     },
@@ -344,6 +395,25 @@ export default {
         this.errorMessage = 'Failed to load your requests. Please try again later.';
       }
     },
+    // New method to fetch user reports
+    async fetchUserReports() {
+      try {
+        const user = this.$store.state.auth.user;
+        if (!user?.uid) return;
+        
+        const reportsRef = collection(db, 'reports');
+        const q = query(reportsRef, where('userId', '==', this.currentUserId));
+        const querySnapshot = await getDocs(q);
+        
+        this.userReports = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error("Error fetching user reports:", error);
+        this.errorMessage = 'Failed to load your reports. Please try again later.';
+      }
+    },
     async fetchAnnouncements() {
       this.loadingAnnouncements = true;
       try {
@@ -377,48 +447,101 @@ export default {
     },
     async checkRequestStatus() {
       if (!this.requestIdInput.trim()) {
-        this.errorMessage = 'Please enter a request ID';
+        this.errorMessage = 'Please enter a Request ID or Report ID';
         return;
       }
       
+      const inputId = this.requestIdInput.trim();
+      
       try {
-        const foundRequest = this.userRequests.find(
-          request => request.id === this.requestIdInput.trim()
-        );
-        
-        if (foundRequest) {
-          this.requestDetails = foundRequest;
-          this.errorMessage = '';
-          return;
+        // First check if it's a request
+        if (inputId.startsWith('BRGY')) {
+          await this.checkRequestStatusById(inputId);
+        } 
+        // Then check if it's a report
+        else if (inputId.startsWith('RPT')) {
+          await this.checkReportStatusById(inputId);
+        } 
+        else {
+          this.errorMessage = 'Invalid ID format. Request IDs start with BRGY, Report IDs start with RPT.';
         }
-
-        const requestRef = doc(db, 'requests', this.requestIdInput.trim());
-        const requestDoc = await getDoc(requestRef);
-        
-        if (!requestDoc.exists()) {
-          this.requestDetails = null;
-          this.errorMessage = 'Request ID not found. Please check and try again.';
-          return;
-        }
-
-        const requestData = requestDoc.data();
-        const user = this.$store.state.user;
-        if (requestData.userId !== user.uid) {
-          this.requestDetails = null;
-          this.errorMessage = 'Request ID not found in your records.';
-          return;
-        }
-
-        this.requestDetails = {
-          id: requestDoc.id,
-          ...requestData
-        };
-        this.errorMessage = '';
       } catch (error) {
-        console.error("Error checking request status:", error);
+        console.error("Error checking status:", error);
         this.requestDetails = null;
-        this.errorMessage = 'An error occurred while checking the request status. Please try again.';
+        this.errorMessage = 'An error occurred while checking the status. Please try again.';
       }
+    },
+    async checkRequestStatusById(requestId) {
+      // First check local user requests
+      const foundRequest = this.userRequests.find(
+        request => request.id === requestId
+      );
+      
+      if (foundRequest) {
+        this.requestDetails = foundRequest;
+        this.errorMessage = '';
+        return;
+      }
+
+      // If not found locally, check Firestore
+      const requestRef = doc(db, 'requests', requestId);
+      const requestDoc = await getDoc(requestRef);
+      
+      if (!requestDoc.exists()) {
+        this.requestDetails = null;
+        this.errorMessage = 'Request ID not found. Please check and try again.';
+        return;
+      }
+
+      const requestData = requestDoc.data();
+      const user = this.$store.state.auth.user;
+      if (requestData.userId !== user.uid) {
+        this.requestDetails = null;
+        this.errorMessage = 'Request ID not found in your records.';
+        return;
+      }
+
+      this.requestDetails = {
+        id: requestDoc.id,
+        ...requestData
+      };
+      this.errorMessage = '';
+    },
+    async checkReportStatusById(reportId) {
+      // First check local user reports
+      const foundReport = this.userReports.find(
+        report => report.id === reportId
+      );
+      
+      if (foundReport) {
+        this.requestDetails = foundReport;
+        this.errorMessage = '';
+        return;
+      }
+
+      // If not found locally, check Firestore
+      const reportRef = doc(db, 'reports', reportId);
+      const reportDoc = await getDoc(reportRef);
+      
+      if (!reportDoc.exists()) {
+        this.requestDetails = null;
+        this.errorMessage = 'Report ID not found. Please check and try again.';
+        return;
+      }
+
+      const reportData = reportDoc.data();
+      const user = this.$store.state.auth.user;
+      if (reportData.userId !== user.uid) {
+        this.requestDetails = null;
+        this.errorMessage = 'Report ID not found in your records.';
+        return;
+      }
+
+      this.requestDetails = {
+        id: reportDoc.id,
+        ...reportData
+      };
+      this.errorMessage = '';
     },
     openAnnouncementModal(announcement) {
       this.selectedAnnouncement = announcement;
@@ -432,6 +555,7 @@ export default {
   async mounted() {
     await this.fetchUserProfile();
     await this.fetchUserRequests();
+    await this.fetchUserReports(); // New: fetch user reports
     await this.fetchAnnouncements();
     this.startDateTimeUpdate();
   },
@@ -444,6 +568,110 @@ export default {
 </script>
 
 <style scoped>
+
+/* Additional CSS for the enhanced modal */
+.input-hint {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+.details-section {
+  padding: 1rem 1.25rem;
+  background-color: white;
+  border-top: 1px solid #e2e8f0;
+}
+
+.details-section h5 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: #4a5568;
+  min-width: 100px;
+}
+
+.detail-value {
+  color: #2d3748;
+  text-align: right;
+  flex: 1;
+  margin-left: 1rem;
+}
+
+.urgency-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.urgency-badge.high {
+  background-color: #fed7d7;
+  color: #c53030;
+}
+
+.urgency-badge.medium {
+  background-color: #feebc8;
+  color: #d69e2e;
+}
+
+.urgency-badge.low {
+  background-color: #c6f6d5;
+  color: #38a169;
+}
+
+.resolution-notes {
+  padding: 1rem 1.25rem;
+  background-color: #f0fff4;
+  border-top: 1px solid #c6f6d5;
+  margin-top: 1rem;
+}
+
+.resolution-notes h5 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.resolution-notes p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+/* Status colors for reports */
+.status-message-container.resolved {
+  background-color: #f0fdf4;
+}
+
+.status-message-container.in_progress {
+  background-color: #eff6ff;
+}
+
+.status-message-container.pending {
+  background-color: #fffbeb;
+}
+
+.status-message-container.rejected {
+  background-color: #fef2f2;
+}
+
+
 /* Base Styles */
 .dashboard-container {
   max-width: 1200px;

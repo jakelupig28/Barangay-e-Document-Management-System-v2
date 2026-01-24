@@ -1,180 +1,317 @@
 <template>
-  <div class="sk-dashboard container py-4">
-    <!-- Static Dashboard Notice Modal -->
-    <div class="modal fade" id="staticDashboardModal" tabindex="-1" aria-labelledby="staticDashboardLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title text-warning" id="staticDashboardLabel">
-              <i class="bi bi-info-circle-fill me-2 text-warning"></i>
+  <SKNav>
+    <div class="sk-portal-container">
+      <!-- Header -->
+      <div class="sk-portal-header">
+        <div class="sk-portal-header-content">
+          <h1 class="sk-portal-title">
+            SK Dashboard
+          </h1>
+          <p class="sk-portal-description">
+            Welcome to your Sangguniang Kabataan official dashboard
+          </p>
+        </div>
+        <div class="sk-portal-actions">
+          <button class="sk-btn sk-btn-primary" @click="showNoticeModal">
+            <i class="fas fa-plus-circle"></i>
+            New Project
+          </button>
+          <button class="sk-btn sk-btn-secondary sk-btn-icon">
+            <i class="fas fa-bell"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Statistics Grid -->
+      <div class="sk-grid sk-grid-cols-3">
+        <div class="sk-card sk-stat-card">
+          <div class="sk-stat-icon sk-stat-icon-primary">
+            <i class="fas fa-kanban"></i>
+          </div>
+          <div class="sk-stat-content">
+            <h3 class="sk-stat-value">12</h3>
+            <p class="sk-stat-label">Total Projects</p>
+            <div class="sk-stat-trend sk-stat-trend-positive">
+              <i class="fas fa-arrow-up"></i>
+              <span>3 new this month</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sk-card sk-stat-card">
+          <div class="sk-stat-icon sk-stat-icon-warning">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div class="sk-stat-content">
+            <h3 class="sk-stat-value">5</h3>
+            <p class="sk-stat-label">Ongoing</p>
+            <div class="sk-stat-trend sk-stat-trend-warning">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>1 needs attention</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sk-card sk-stat-card">
+          <div class="sk-stat-icon sk-stat-icon-success">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="sk-stat-content">
+            <h3 class="sk-stat-value">7</h3>
+            <p class="sk-stat-label">Completed</p>
+            <div class="sk-stat-trend sk-stat-trend-positive">
+              <i class="fas fa-check-circle"></i>
+              <span>100% success rate</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activities -->
+      <div class="sk-card sk-mt-6">
+        <div class="sk-card-header">
+          <h2 class="sk-card-title">Recent Activities</h2>
+        </div>
+        <div class="sk-card-body">
+          <div class="sk-activities-list">
+            <div v-for="(activity, i) in activities" :key="i" class="sk-activity-item">
+              <div class="sk-activity-icon" :class="`sk-activity-${activity.status}`">
+                <i :class="activity.icon"></i>
+              </div>
+              <div class="sk-activity-content">
+                <h4>{{ activity.title }}</h4>
+                <p>{{ activity.time }}</p>
+              </div>
+              <span class="sk-badge" :class="`sk-badge-${activity.status === 'completed' ? 'success' : activity.status === 'pending' ? 'warning' : 'primary'}`">
+                {{ activity.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notice Modal -->
+      <div class="sk-modal-overlay" v-if="showModal" @click.self="closeModal">
+        <div class="sk-modal-content">
+          <div class="sk-modal-header">
+            <h3 class="sk-modal-title">
+              <i class="fas fa-info-circle" style="color: #28a745;"></i>
               Notice
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </h3>
+            <button class="sk-modal-close" @click="closeModal">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
-          <div class="modal-body">
-            This <strong>dashboard</strong> is for demonstration purposes only and does <strong>not</strong> reflect live project statistics. <br />
-            <br>
-            <span class="text-success fw-semibold">Note:</span> Other sections such as <strong>Members</strong> and <strong>Forum</strong> are working as expected.
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Got it</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h2 class="fw-bold text-success mb-2">SK Dashboard</h2>
-        <p class="text-muted">Welcome to your Sangguniang Kabataan official dashboard</p>
-      </div>
-      <div class="d-flex">
-        <button class="btn btn-success me-2">
-          <i class="bi bi-plus-circle me-1"></i> New Project
-        </button>
-        <button class="btn btn-outline-secondary">
-          <i class="bi bi-bell-fill"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row g-4 mb-4">
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="card-title text-muted mb-0">Total Projects</h5>
-              <div class="bg-success bg-opacity-10 p-2 rounded">
-                <i class="bi bi-kanban text-success"></i>
-              </div>
-            </div>
-            <h2 class="fw-bold mt-3">12</h2>
-            <p class="text-success small mb-0">
-              <i class="bi bi-arrow-up"></i> 3 new this month
+          <div class="sk-modal-body">
+            <p>
+              This <strong>dashboard</strong> is for demonstration purposes only and does
+              <strong>not</strong> reflect live project statistics.
             </p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="card-title text-muted mb-0">Ongoing</h5>
-              <div class="bg-warning bg-opacity-10 p-2 rounded">
-                <i class="bi bi-hourglass-split text-warning"></i>
+            <div class="sk-note-box">
+              <i class="fas fa-lightbulb"></i>
+              <div>
+                <strong>Note:</strong> Other sections such as
+                <strong>Members</strong> and <strong>Forum</strong> are working as expected.
               </div>
             </div>
-            <h2 class="fw-bold mt-3">5</h2>
-            <p class="text-warning small mb-0">
-              <i class="bi bi-exclamation-circle"></i> 1 needs attention
-            </p>
           </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="card-title text-muted mb-0">Completed</h5>
-              <div class="bg-primary bg-opacity-10 p-2 rounded">
-                <i class="bi bi-check-circle text-primary"></i>
-              </div>
-            </div>
-            <h2 class="fw-bold mt-3">7</h2>
-            <p class="text-primary small mb-0">
-              <i class="bi bi-check-circle"></i> 100% success rate
-            </p>
+          <div class="sk-modal-footer">
+            <button class="sk-btn sk-btn-primary" @click="closeModal">
+              Got it
+            </button>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Recent Activities -->
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white border-0">
-        <h5 class="mb-0 fw-bold">Recent Activities</h5>
-      </div>
-      <div class="card-body">
-        <div class="list-group list-group-flush">
-          <div class="list-group-item border-0 py-3">
-            <div class="d-flex align-items-center">
-              <div class="flex-shrink-0">
-                <div class="bg-success bg-opacity-10 text-success p-2 rounded-circle">
-                  <i class="bi bi-check-circle-fill"></i>
-                </div>
-              </div>
-              <div class="flex-grow-1 ms-3">
-                <h6 class="mb-1">Youth Sports Fest completed</h6>
-                <p class="mb-0 small text-muted">2 days ago</p>
-              </div>
-              <span class="badge bg-success bg-opacity-10 text-success">Completed</span>
-            </div>
-          </div>
-          <div class="list-group-item border-0 py-3">
-            <div class="d-flex align-items-center">
-              <div class="flex-shrink-0">
-                <div class="bg-warning bg-opacity-10 text-warning p-2 rounded-circle">
-                  <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-              </div>
-              <div class="flex-grow-1 ms-3">
-                <h6 class="mb-1">Scholarship program needs review</h6>
-                <p class="mb-0 small text-muted">1 week ago</p>
-              </div>
-              <span class="badge bg-warning bg-opacity-10 text-warning">Pending</span>
-            </div>
-          </div>
-          <div class="list-group-item border-0 py-3">
-            <div class="d-flex align-items-center">
-              <div class="flex-shrink-0">
-                <div class="bg-info bg-opacity-10 text-info p-2 rounded-circle">
-                  <i class="bi bi-lightbulb-fill"></i>
-                </div>
-              </div>
-              <div class="flex-grow-1 ms-3">
-                <h6 class="mb-1">New project proposal: Clean-up Drive</h6>
-                <p class="mb-0 small text-muted">2 weeks ago</p>
-              </div>
-              <span class="badge bg-info bg-opacity-10 text-info">New</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  </SKNav>
 </template>
 
 <script>
 export default {
   name: 'SKDashboard',
-  mounted() {
-    const modalEl = document.getElementById('staticDashboardModal');
-    if (modalEl && window.bootstrap) {
-      const modal = new window.bootstrap.Modal(modalEl);
-      modal.show();
+  data() {
+    return {
+      showModal: true,
+      activities: [
+        {
+          title: 'Youth Sports Fest completed',
+          time: '2 days ago',
+          status: 'completed',
+          icon: 'fas fa-check-circle'
+        },
+        {
+          title: 'Scholarship program needs review',
+          time: '1 week ago',
+          status: 'pending',
+          icon: 'fas fa-exclamation-triangle'
+        },
+        {
+          title: 'New project proposal: Clean-up Drive',
+          time: '2 weeks ago',
+          status: 'new',
+          icon: 'fas fa-lightbulb'
+        }
+      ]
+    };
+  },
+  methods: {
+    showNoticeModal() {
+      this.showModal = true;
+    },
+    closeModal() {
+      this.showModal = false;
     }
   }
-}
+};
 </script>
 
 <style scoped>
-.card {
-  border-radius: 12px;
-  transition: transform 0.2s;
+/* Update colors to match sidebar green theme */
+:root {
+  --primary-500: #28a745;
+  --primary-600: #218838;
+  --success-600: #28a745;
+  --warning-600: #ffc107;
 }
 
-.card:hover {
-  transform: translateY(-3px);
+.sk-btn-primary {
+  background: linear-gradient(135deg, #28a745, #218838);
+  border-color: #28a745;
 }
 
-.list-group-item {
-  border-radius: 8px !important;
-  margin-bottom: 5px;
+.sk-btn-primary:hover {
+  background: linear-gradient(135deg, #218838, #1e7e34);
+  border-color: #1e7e34;
 }
 
-.list-group-item:hover {
-  background-color: #f8f9fa;
+.sk-stat-icon-primary {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+.sk-stat-icon-success {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+.sk-stat-icon-warning {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+}
+
+.sk-stat-trend-positive {
+  color: #28a745;
+}
+
+.sk-badge-primary {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.sk-badge-success {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.sk-badge-warning {
+  background: rgba(255, 193, 7, 0.1);
+  color: #856404;
+  border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+/* Activity icons */
+.sk-activity-completed {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+.sk-activity-pending {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+}
+
+.sk-activity-new {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+/* Modal updates */
+.sk-modal-title i {
+  color: #28a745 !important;
+}
+
+.sk-note-box {
+  border-left-color: #28a745;
+}
+
+.sk-note-box i {
+  color: #28a745;
+}
+
+/* Additional component-specific styles */
+.sk-activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sk-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.sk-activity-item:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-200);
+}
+
+.sk-activity-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.sk-activity-content {
+  flex: 1;
+}
+
+.sk-activity-content h4 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--gray-900);
+  font-size: 1rem;
+}
+
+.sk-activity-content p {
+  margin: 0.25rem 0 0 0;
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.sk-note-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: rgba(40, 167, 69, 0.05);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid #28a745;
+  margin-top: 1rem;
+}
+
+.sk-note-box div {
+  flex: 1;
 }
 </style>

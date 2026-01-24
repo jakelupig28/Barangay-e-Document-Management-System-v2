@@ -18,6 +18,10 @@ import { fas } from '@fortawesome/free-solid-svg-icons';
 import Notification from '@/components/Notification.vue';
 import NotificationService from '@/services/notification';
 
+
+import './assets/styles/sk-portal.css'  
+
+
 // Add all solid icons to the library
 library.add(fas);
 

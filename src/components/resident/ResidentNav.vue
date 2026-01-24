@@ -1,65 +1,103 @@
 <template>
-  <nav class="app-navbar">
-    <div class="navbar-container">
-      <router-link class="navbar-brand" to="/resident/dashboard">
-        <div class="brand-logo">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
-        </div>
-        <span class="brand-text">Resident Portal</span>
-      </router-link>
-      
-      <button class="navbar-toggler" @click="toggleMenu" :class="{ 'active': menuOpen }">
-        <span class="toggler-icon"></span>
-      </button>
-      
-      <div class="navbar-menu" :class="{ 'active': menuOpen }">
-        <ul class="nav-links">
-          <li class="nav-item">
-            <router-link class="nav-link" active-class="active" to="/resident/dashboard" @click="closeMenu">
-              <span>Dashboard</span>
-            </router-link>
-          </li>
-          <li class="nav-item">
-            <router-link class="nav-link" active-class="active" to="/resident/profile" @click="closeMenu">
-              <span>Profile</span>
-            </router-link>
-          </li>
-          <li class="nav-item">
-            <router-link class="nav-link" active-class="active" to="/resident/request" @click="closeMenu">
-              <span>Requests</span>
-            </router-link>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link logout-button" @click="logout">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" :class="{ 'collapsed': isCollapsed }">
+      <div class="sidebar-header">
+        <router-link class="sidebar-brand" to="/resident/dashboard">
+          <div class="brand-content">
+            <div class="brand-logo">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
               </svg>
-              <span>Logout</span>
-            </button>
+            </div>
+            <span class="brand-text" v-show="!isCollapsed">Resident Portal</span>
+          </div>
+        </router-link>
+        <button 
+          class="sidebar-toggle" 
+          @click="toggleSidebar"
+          :title="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        >
+          <i :class="isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'"></i>
+        </button>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <ul class="nav-list">
+          <li class="nav-item">
+            <router-link class="nav-link" active-class="active" to="/resident/dashboard">
+              <i class="nav-icon fas fa-tachometer-alt"></i>
+              <span class="nav-text">Dashboard</span>
+            </router-link>
+          </li>
+          
+          <li class="nav-item">
+            <router-link class="nav-link" active-class="active" to="/resident/profile">
+              <i class="nav-icon fas fa-user"></i>
+              <span class="nav-text">Profile</span>
+            </router-link>
+          </li>
+          
+          <li class="nav-item">
+            <router-link class="nav-link" active-class="active" to="/resident/request">
+              <i class="nav-icon fas fa-clipboard-list"></i>
+              <span class="nav-text">Requests</span>
+            </router-link>
+          </li>
+
+          <!-- New Report Section -->
+          <li class="nav-item">
+            <router-link class="nav-link" active-class="active" to="/resident/report">
+              <i class="nav-icon fas fa-flag"></i>
+              <span class="nav-text">eReports</span>
+            </router-link>
+          </li>
+
+          <li class="nav-item">
+            <router-link class="nav-link" active-class="active" to="/resident/feedback">
+              <i class="nav-icon fas fa-comment-dots"></i>
+              <span class="nav-text">Feedback</span>
+            </router-link>
+          </li>
+
+          <li class="nav-item">
+            <router-link class="nav-link" active-class="active" to="/resident/settings">
+              <i class="nav-icon fas fa-cog"></i>
+              <span class="nav-text">Settings</span>
+            </router-link>
           </li>
         </ul>
+      </nav>
+
+      <!-- Fixed Logout Button -->
+      <div class="sidebar-footer" :class="{ collapsed: isCollapsed }">
+        <button class="logout-btn" @click="logout">
+          <i class="logout-icon fas fa-sign-out-alt"></i>
+          <span class="logout-text" v-show="!isCollapsed">Logout</span>
+        </button>
       </div>
-    </div>
-  </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content" :class="{ 'expanded': isCollapsed }">
+      <div class="content-wrapper">
+        <slot></slot>
+      </div>
+    </main>
+  </div>
 </template>
 
 <script>
 import { auth } from '@/firebase/config';
 import { useRouter } from 'vue-router';
+import { ref } from 'vue';
 
 export default {
-  data() {
-    return {
-      menuOpen: false
-    }
-  },
+  name: 'ResidentNav',
   setup() {
     const router = useRouter();
+    const isCollapsed = ref(false);
 
     const logout = async () => {
       try {
@@ -70,218 +108,297 @@ export default {
       }
     };
 
-    return { logout };
+    const toggleSidebar = () => {
+      isCollapsed.value = !isCollapsed.value;
+    };
+
+    return { logout, isCollapsed, toggleSidebar };
   },
-  methods: {
-    toggleMenu() {
-      this.menuOpen = !this.menuOpen;
-    },
-    closeMenu() {
-      this.menuOpen = false;
-    }
-  }
 };
 </script>
 
 <style scoped>
-.app-navbar {
-  background: linear-gradient(135deg, #4361ee, #3a0ca3);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  padding: 0.8rem 0;
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8f9fa;
 }
 
-.navbar-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: linear-gradient(135deg, #4361ee, #3a0ca3);
+  color: white;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
   position: relative;
 }
 
-.navbar-brand {
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar-header {
+  padding: 1.5rem 1rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.sidebar-brand {
+  color: white;
+  text-decoration: none;
+  display: block;
+}
+
+.brand-content {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: white;
-  font-weight: 600;
-  font-size: 1.25rem;
-  text-decoration: none;
-  z-index: 1001;
 }
 
 .brand-logo {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
 }
 
 .brand-logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.brand-text {
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.collapsed .brand-text {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Sidebar toggle */
+.sidebar-toggle {
+  position: absolute;
+  top: 1.5rem;
+  right: -12px;
   width: 24px;
   height: 24px;
-}
-
-.navbar-toggler {
-  background: none;
+  border-radius: 50%;
+  background: white;
   border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-  display: none;
-  z-index: 1001;
-}
-
-.toggler-icon {
-  display: block;
-  width: 24px;
-  height: 2px;
-  background-color: white;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.toggler-icon::before,
-.toggler-icon::after {
-  content: '';
-  position: absolute;
-  width: 24px;
-  height: 2px;
-  background-color: white;
-  transition: all 0.3s ease;
-}
-
-.toggler-icon::before {
-  transform: translateY(-6px);
-}
-
-.toggler-icon::after {
-  transform: translateY(6px);
-}
-
-.navbar-toggler.active .toggler-icon {
-  background-color: transparent;
-}
-
-.navbar-toggler.active .toggler-icon::before {
-  transform: rotate(45deg);
-}
-
-.navbar-toggler.active .toggler-icon::after {
-  transform: rotate(-45deg);
-}
-
-.navbar-menu {
   display: flex;
   align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  color: #4361ee;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
 }
 
-.nav-links {
-  display: flex;
+.sidebar-toggle:hover {
+  transform: scale(1.1);
+}
+
+/* Navigation */
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 0;
+  padding-bottom: 5rem; /* Space for footer */
+}
+
+.nav-list {
   list-style: none;
-  margin: 0;
   padding: 0;
-  gap: 0.5rem;
+  margin: 0;
 }
 
 .nav-item {
-  display: flex;
-  align-items: center;
+  margin-bottom: 0.25rem;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.9);
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.nav-link svg {
-  width: 18px;
-  height: 18px;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  margin: 0 0.5rem;
+  border-radius: 0 8px 8px 0;
 }
 
 .nav-link:hover {
   background-color: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .nav-link.active {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  border-left-color: white;
   font-weight: 600;
 }
 
-.logout-button {
+.nav-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.nav-text {
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.collapsed .nav-text {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Fixed Footer */
+.sidebar-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 260px;
+
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1001;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  width: 70px;
+}
+
+/* Logout button */
+.logout-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.9);
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  gap: 0.75rem;
   width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.logout-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
-.logout-button svg {
-  width: 18px;
-  height: 18px;
+.logout-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 1.1rem;
 }
 
+.logout-text {
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.collapsed .logout-text {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  transition: all 0.3s ease;
+  overflow-x: auto;
+}
+
+.main-content.expanded {
+  margin-left: 0;
+}
+
+.content-wrapper {
+  padding: 2rem;
+  min-height: 100%;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .navbar-toggler {
+  .sidebar {
+    position: fixed;
+    height: 100%;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 260px;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-footer {
+    width: 260px !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  .mobile-menu-toggle {
     display: block;
-  }
-  
-  .navbar-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1001;
     background: #4361ee;
-    padding: 1rem 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transform: translateY(-150%);
-    opacity: 0;
-    transition: all 0.3s ease;
-    flex-direction: column;
-    z-index: 1000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem;
+    cursor: pointer;
   }
-  
-  .navbar-menu.active {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  
-  .nav-links {
-    flex-direction: column;
-    width: 100%;
-    gap: 0.25rem;
-  }
-  
-  .nav-item {
-    width: 100%;
-  }
-  
-  .nav-link, .logout-button {
-    padding: 1rem;
-    border-radius: 0.5rem;
-    justify-content: flex-start;
-  }
+}
+
+/* Glow hover effect */
+.nav-link, .logout-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::after, .logout-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.nav-link:hover::after, .logout-btn:hover::after {
+  left: 100%;
 }
 </style>

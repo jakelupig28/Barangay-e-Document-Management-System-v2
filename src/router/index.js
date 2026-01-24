@@ -3,7 +3,6 @@ import { auth } from '@/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import store from '@/store';
-import UnderMaintenance from '@/components/UnderMaintenance.vue';
 
 // Public views
 import Home from '@/views/Home.vue';
@@ -12,6 +11,7 @@ import Register from '@/views/Register.vue';
 import About from '@/views/About.vue';
 import Services from '@/views/Services.vue';
 import Announcements from '@/views/Announcements.vue';
+import eReports from '@/views/Reports.vue';
 import PendingApproval from '@/views/PendingApproval.vue';
 
 // Resident components
@@ -24,6 +24,7 @@ import OfficialDashboard from '@/components/official/OfficialDashboard.vue';
 import ManageResidents from '@/components/official/ManageResidents.vue';
 import ManageRequests from '@/components/official/ManageRequests.vue';
 
+
 // SK Official components
 import SKDashboard from '@/components/sk/SKDashboard.vue';
 import SKProjects from '@/components/sk/SKProjects.vue';
@@ -31,245 +32,125 @@ import SKMember from '@/components/sk/SKMember.vue';
 
 // Admin components
 import AdminDashboard from '@/components/admin/AdminDashboard.vue';
-import NotFound from '@/views/NotFound.vue';
+
+import NotFound from '@/views/NotFound.vue'
+
+
 
 const routes = [
-  { 
-    path: '/', 
-    name: 'home', 
-    component: Home, 
-    meta: { 
-      title: 'Home',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/login', 
-    name: 'login', 
-    component: Login, 
-    meta: { 
-      requiresGuest: true, 
-      title: 'Login',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/register', 
-    name: 'register', 
-    component: Register, 
-    meta: { 
-      requiresGuest: true, 
-      title: 'Register',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/about', 
-    name: 'about', 
-    component: About, 
-    meta: { 
-      title: 'About',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/services', 
-    name: 'services', 
-    component: Services, 
-    meta: { 
-      title: 'Services',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/announcements', 
-    name: 'announcements', 
-    component: Announcements, 
-    meta: { 
-      title: 'Announcements',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/pending-approval', 
-    name: 'pending-approval', 
-    component: PendingApproval, 
-    meta: { 
-      requiresAuth: true, 
-      title: 'Pending Approval',
-      showLayout: true 
-    } 
-  },
+  { path: '/', name: 'home', component: Home, meta: { title: 'Home' } },
+  { path: '/login', name: 'login', component: Login, meta: { requiresGuest: true, title: 'Login' } },
+  { path: '/register', name: 'register', component: Register, meta: { requiresGuest: true, title: 'Register' } },
+  { path: '/about', name: 'about', component: About, meta: { title: 'About' } },
+  { path: '/services', name: 'services', component: Services, meta: { title: 'Services' } },
+  { path: '/announcements', name: 'announcements', component: Announcements, meta: { title: 'Announcements' } },
+  { path: '/eReports', name: 'eReports', component: eReports, meta: { title: 'eReports' } },
+  { path: '/pending-approval', name: 'pending-approval', component: PendingApproval, meta: { requiresAuth: true, title: 'Pending Approval' } },
 
   // Resident routes
-  { 
-    path: '/resident/dashboard', 
-    name: 'resident-dashboard', 
-    component: ResidentDashboard, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['resident'], 
-      title: 'Resident Dashboard',
-      showLayout: true 
-    } 
+  { path: '/resident/dashboard', name: 'resident-dashboard', component: ResidentDashboard, meta: { requiresAuth: true, allowedRoles: ['resident'], title: 'Resident Dashboard' } },
+  { path: '/resident/profile', name: 'resident-profile', component: ResidentProfile, meta: { requiresAuth: true, allowedRoles: ['resident'], title: 'Resident Profile' } },
+  { path: '/resident/request', name: 'resident-request', component: RequestForm, meta: { requiresAuth: true, allowedRoles: ['resident'], title: 'Resident Request Form' } },
+  {
+    path: '/resident/report',
+    name: 'resident-report',
+    component: () => import('@/components/resident/ResidentReport.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['resident'], title: 'Resident Report' }
   },
-  { 
-    path: '/resident/profile', 
-    name: 'resident-profile', 
-    component: ResidentProfile, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['resident'], 
-      title: 'Resident Profile',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/resident/request', 
-    name: 'resident-request', 
-    component: RequestForm, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['resident'], 
-      title: 'Resident Request Form',
-      showLayout: true 
-    } 
+    {
+    path: '/resident/feedback',
+    name: 'resident-feedback',
+    component: () => import('@/components/resident/ResidentFeedback.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['resident'], title: 'Resident Feedback' }
   },
 
+      {
+    path: '/resident/settings',
+    name: 'resident-setting',
+    component: () => import('@/components/resident/ResidentSettings.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['resident'], title: 'Resident Setting' }
+  },
   // Barangay Official routes
-  { 
-    path: '/official/dashboard', 
-    name: 'official-dashboard', 
-    component: OfficialDashboard, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['official'], 
-      title: 'Official Dashboard',
-      showLayout: true 
-    } 
+  { path: '/official/dashboard', name: 'official-dashboard', component: OfficialDashboard, meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Official Dashboard' } },
+  { path: '/official/residents', name: 'official-residents', component: ManageResidents, meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Manage Residents' } },
+  { path: '/official/requests', name: 'official-requests', component: ManageRequests, meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Manage Requests' } },
+  {
+  path: '/official/reports',
+  name: 'OfficialReports',
+  component: () => import('@/components/official/ManageReports.vue'),
+  meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Reports' }
   },
-  { 
-    path: '/official/residents', 
-    name: 'official-residents', 
-    component: ManageResidents, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['official'], 
-      title: 'Manage Residents',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/official/requests', 
-    name: 'official-requests', 
-    component: ManageRequests, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['official'], 
-      title: 'Manage Requests',
-      showLayout: true 
-    } 
+  {
+  path: '/official/requests/:id',
+  name: 'ViewRequest',
+  component: () => import('@/components/official/ViewRequest.vue'),
+  meta: { requiresAuth: true, requiresOfficial: true }
   },
 
+      {
+      path: '/official/requests/:id/generate',
+      name: 'GenerateDocument',
+      component: () => import('@/components/official/GenerateDocument.vue'),
+      meta: { requiresAuth: true, requiresOfficial: true }
+    },
+
+    {
+    path: '/official/settings',
+    name: 'official-settings',
+    component: () => import('@/components/official/BarangaySettings.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Barangay Settings' },
+  },
+{
+  path: '/official/resident/:id',
+  name: 'ResidentDetails',
+  component: () => import('@/components/official/ResidentDetails.vue'),
+  meta: { requiresAuth: true, requiresOfficial: true }
+},
+{
+    path: '/reports/:id',           // <-- dynamic segment → the report ID
+    name: 'ReportDetails',
+     component: () => import('@/components/official/ReportDetails.vue'),
+    props: true,                    // automatically pass `route.params.id` as a prop
+    meta: { title: 'Report Details' }
+  },
   // SK Official routes
-  { 
-    path: '/sk/dashboard', 
-    name: 'sk-dashboard', 
-    component: SKDashboard, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['sk'], 
-      title: 'SK Dashboard',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/sk/forum', 
-    name: 'sk-forum', 
-    component: SKProjects, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['sk'], 
-      title: 'SK forum',
-      showLayout: true 
-    } 
-  },
-  { 
-    path: '/sk/members', 
-    name: 'sk-member', 
-    component: SKMember, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['sk'], 
-      title: 'SK Member',
-      showLayout: true 
-    } 
-  },
+  { path: '/sk/dashboard', name: 'sk-dashboard', component: SKDashboard, meta: { requiresAuth: true, allowedRoles: ['sk'], title: 'SK Dashboard' } },
+  { path: '/sk/forum', name: 'sk-projects', component: SKProjects, meta: { requiresAuth: true, allowedRoles: ['sk'], title: 'SK Projects' } },
+  { path: '/sk/members', name: 'sk-member', component: SKMember, meta: { requiresAuth: true, allowedRoles: ['sk'], title: 'SK Member' } },
 
   // Admin routes
-  { 
-    path: '/admin/dashboard', 
-    name: 'admin-dashboard', 
-    component: AdminDashboard, 
-    meta: { 
-      requiresAuth: true, 
-      allowedRoles: ['admin'], 
-      title: 'Admin Dashboard',
-      showLayout: true 
-    } 
-  },
-
-  // Maintenance route
-  { 
-    path: '/maintenance', 
-    name: 'maintenance', 
-    component: UnderMaintenance, 
-    meta: { 
-      title: 'Under Maintenance',
-      showLayout: false 
-    } 
-  },
+  { path: '/admin/dashboard', name: 'admin-dashboard', component: AdminDashboard, meta: { requiresAuth: true, allowedRoles: ['admin'], title: 'Admin Dashboard' } },
 
   // Catch-all
-  { 
-    path: '/404', 
-    name: 'NotFound', 
-    component: NotFound,
-    meta: {
-      showLayout: true
-    } 
+ {
+    path: '/404',
+    name: 'NotFound',
+    component: NotFound
   },
-  { 
-    path: '/:pathMatch(.*)*', 
-    redirect: '/404' 
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/404'
   },
 
   {
-    path: '/id/:residentId',
-    name: 'id-generator',
-    component: () => import('@/components/IDGenerator.vue'),
-    meta: { 
-      requiresAuth: true,
-      showLayout: true 
-    }
-  },
-  {
-    path: '/verify',
-    name: 'verify',
-    component: () => import('@/components/VerificationPage.vue'),
-    meta: {
-      showLayout: true
-    }
-  },
-  {
-    path: '/verify/:idNumber',
-    name: 'verify-id',
-    component: () => import('@/components/VerificationPage.vue'),
-    meta: {
-      showLayout: true
-    }
-  },
+  path: '/id/:residentId',
+  name: 'id-generator',
+  component: () => import('@/components/IDGenerator.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/verify',
+  name: 'verify',
+  component: () => import('@/components/VerificationPage.vue')
+},
+{
+  path: '/verify/:idNumber',
+  name: 'verify-id',
+  component: () => import('@/components/VerificationPage.vue')
+}
+
 ];
+
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
@@ -292,19 +173,6 @@ function getDashboardRoute(role) {
 
 // Router guard
 router.beforeEach(async (to, from, next) => {
-  // First check maintenance status
-  let maintenanceEnabled = false;
-  try {
-    const maintenanceDoc = await getDoc(doc(db, 'system', 'maintenance'));
-    if (maintenanceDoc.exists()) {
-      maintenanceEnabled = maintenanceDoc.data().enabled || false;
-    }
-    // Store maintenance status in Vuex
-    store.commit('setMaintenance', maintenanceEnabled);
-  } catch (err) {
-    console.error('Error checking maintenance status:', err);
-  }
-
   await auth.authStateReady();
   const currentUser = auth.currentUser;
 
@@ -314,30 +182,6 @@ router.beforeEach(async (to, from, next) => {
 
   // Set document title
   document.title = to.meta.title ? `${to.meta.title} | Barangay Information System` : 'Barangay Information System';
-
-  // Check if user is admin
-  let isAdmin = false;
-  if (currentUser) {
-    try {
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      if (userDoc.exists()) {
-        isAdmin = userDoc.data().role === 'admin';
-      }
-    } catch (err) {
-      console.error('Error checking user role:', err);
-    }
-  }
-
-  // Maintenance mode handling
-  if (maintenanceEnabled && !isAdmin && to.name !== 'maintenance') {
-    // Force showLayout to false when redirecting to maintenance
-    to.meta.showLayout = false;
-    return next({ name: 'maintenance' });
-  }
-
-  if (!maintenanceEnabled && to.name === 'maintenance') {
-    return next({ name: 'home' });
-  }
 
   // Not logged in and route needs auth
   if (requiresAuth && !currentUser) {
@@ -423,11 +267,6 @@ router.beforeEach(async (to, from, next) => {
     if (allowedRoles.length && !allowedRoles.includes(user?.role)) {
       return next(getDashboardRoute(user.role));
     }
-  }
-
-  // Ensure showLayout is set for all routes
-  if (to.meta.showLayout === undefined) {
-    to.meta.showLayout = true;
   }
 
   next();

@@ -1,14 +1,11 @@
 <template>
   <div class="profile-container">
-    <!-- Profile Header -->
-           <br>
-      <br>
     <div class="profile-header">
       <div class="header-content">
         <h1 class="profile-title">My Profile</h1>
-        <p class="profile-subtitle">Manage your personal information and ID</p>
+        <!-- <p class="profile-subtitle">Manage your personal information and ID</p> -->
       </div>
-    </div>
+    </div><br>
 
     <!-- Main Content -->
     <div class="profile-content">
@@ -19,6 +16,7 @@
             <i class="fas fa-edit"></i> Edit Profile
           </button>
         </div>
+        
 
         <!-- View Mode -->
         <div v-if="!editMode && profile" class="profile-view">
@@ -567,34 +565,53 @@ export default {
 </script>
 
 <style scoped>
-.profile-container {
+
+
+/* -------------------------------------------------
+   Page wrapper – light background
+   ------------------------------------------------- */
+.profile-wrapper {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  font-family: 'Inter', sans-serif; /* Updated to a modern sans-serif font */
+  padding-bottom: 3rem;
+  background: #f9fafb;
 }
 
+/* -------------------------------------------------
+   Header – transparent, centered
+   ------------------------------------------------- */
 .profile-header {
-  background: linear-gradient(to right, #1e3a8a, #3b82f6);
-  color: white;
-  padding: 3rem 2rem;
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  overflow: hidden;
+  background: transparent;
+  color: #1f2937;
+  padding: 3rem 2rem 1.5rem;
+  text-align: center;
 }
 
 .header-content {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
-  width: 100%;
-  position: relative;
-  z-index: 2;
+  margin-top: -30px;
 }
 
 .profile-title {
   font-size: 2.25rem;
   font-weight: 700;
+  margin: 0;
+  text-align: left;
+  color: #1f2937;
+}
+
+.profile-subtitle {
+  font-size: 1.1rem;
+  margin: 0.75rem 0 0;
+  font-weight: 400;
+  text-align: left;
+  color: #4b5563;
+}
+
+.profile-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-top: -80px;
   margin: 0;
   letter-spacing: -0.025em;
 }

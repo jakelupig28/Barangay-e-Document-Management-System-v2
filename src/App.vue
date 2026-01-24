@@ -1,44 +1,68 @@
 <template>
   <div id="app">
-    <!-- Logo Loader during initial auth check -->
+    <!-- Loader -->
     <div
       v-if="(loading || roleLoading) && !hideLoadingRoutes.includes($route.name)"
       class="loading-overlay"
     >
       <div class="loading-content">
-        <img
-          src="@/assets/bis-logo.png"
-          alt="Loading..."
-          class="loading-logo"
-        />
+        <img src="@/assets/bis-logo.png" alt="Loading..." class="loading-logo" />
       </div>
     </div>
 
-    <!-- Main App Content -->
+    <!-- Main Content -->
     <template v-else>
-      <!-- Maintenance mode check -->
+      <!-- Maintenance mode -->
       <template v-if="!maintenanceMode || isAdmin">
-        <!-- Role-specific navbars -->
-        <ResidentNav v-if="showNav && userRole === 'resident'" />
-        <OfficialNav v-if="showNav && userRole === 'official'" />
-        <SKNav v-if="showNav && userRole === 'sk'" />
-        <AdminNav v-if="showNav && userRole === 'admin'" />
-        <!-- Public navbar when not logged in -->
-        <NavBar v-if="showNav && userRole === null && !$route.meta.hideLayout" />
+        
+        <!-- SK Layout -->
+        <template v-if="userRole === 'sk' && showNav">
+          <SKNav>
+            <Notification />
+            <main><router-view /></main>
+          </SKNav>
+        </template>
 
-        <!-- Notifications -->
-        <Notification />
+        <!-- Resident Layout -->
+        <template v-else-if="userRole === 'resident' && showNav">
+          <ResidentNav>
+            <Notification />
+            <router-view />
+          </ResidentNav>
+        </template>
 
-        <!-- Router outlet -->
-        <main>
+        <!-- Official Layout -->
+        <template v-else-if="userRole === 'official' && showNav">
+          <OfficialNav>
+            <Notification />
+            <router-view />
+          </OfficialNav>
+        </template>
+
+        <!-- Admin Layout -->
+        <template v-else-if="userRole === 'admin' && showNav">
+          <AdminNav />
+          <Notification />
+          <main><router-view /></main>
+        </template>
+
+        <!-- Public Layout -->
+        <template v-else-if="showNav && !$route.meta.hideLayout">
+          <NavBar />
+          <Notification />
           <router-view />
-        </main>
+          <Footer v-if="showFooter" />
+        </template>
 
-        <!-- Footer -->
-        <Footer v-if="showFooter && !$route.meta.hideLayout" />
+        <!-- No Layout (login/register/etc.) -->
+        <template v-else>
+          <Notification />
+          <router-view />
+        </template>
+
       </template>
 
-      <!-- Maintenance mode content -->
+      <!-- Maintenance Mode -->
       <UnderMaintenance v-if="maintenanceMode && !isAdmin" />
     </template>
   </div>
@@ -53,8 +77,11 @@ import AdminNav from '@/components/admin/AdminNav'
 import Footer from '@/components/common/Footer'
 import Notification from '@/components/common/Notification'
 import UnderMaintenance from '@/components/UnderMaintenance.vue'
+import eReports from '@/views/Reports.vue'
+
 
 export default {
+  name: 'App',
   components: {
     NavBar,
     ResidentNav,
@@ -76,6 +103,7 @@ export default {
         'announcements',
         'login',
         'register',
+        'eReports',
         'NotFound',
         'maintenance'
       ]
@@ -86,10 +114,11 @@ export default {
       return this.$route.name !== 'login' && 
              this.$route.name !== 'register' && 
              this.$route.name !== 'NotFound' &&
+             this.$route.name !== 'pending-approval' &&
              !this.$route.meta.hideLayout;
     },
     showFooter() {
-      const noFooterRoutes = ['login', 'register', 'admin-dashboard', 'NotFound'];
+      const noFooterRoutes = ['login', 'register', 'admin-dashboard', 'NotFound', 'sk-member', 'sk-projects', 'sk-dashboard', 'RequestForm', 'ResidentProfile', 'ResidentDashboard'];
       return !noFooterRoutes.includes(this.$route.name) && !this.$route.meta.hideLayout;
     },
     userRole() {
@@ -109,7 +138,6 @@ export default {
       }
     },
     '$route'(to) {
-      // Update document title based on route meta
       document.title = to.meta.title ? 
         `${to.meta.title} | Barangay Information System` : 
         'Barangay Information System';
@@ -118,7 +146,6 @@ export default {
   async created() {
     try {
       await this.$store.dispatch('auth/initializeAuth');
-      // Check maintenance status when app initializes
       await this.$store.dispatch('checkMaintenanceStatus');
     } catch (e) {
       console.error('Error initializing auth:', e);
@@ -182,5 +209,11 @@ export default {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+
+/* Ensure main content doesn't have conflicting styles */
+main {
+  min-height: calc(100vh - 80px); /* Adjust based on your footer height */
 }
 </style>

@@ -1,50 +1,52 @@
 <template>
-  <div class="sk-forum">
+  <div class="sk-forum sk-portal-container">
     <!-- Header with gradient background -->
-    <div class="forum-header">
-      <div class="container">
-        <div class="header-content">
-          <h1>SK Community Hub</h1>
-          <p>Connect, share, and grow with fellow SK members</p>
-          <button class="new-post-btn" @click="showPostModal = true">
-            <i class="fas fa-plus"></i> Create Post
-          </button>
-        </div>
+    <div class="sk-portal-header">
+      <div class="sk-portal-header-content">
+        <h1 class="sk-portal-title">
+          SK Community Hub
+        </h1>
+        <p class="sk-portal-description">Connect, share, and grow with fellow SK members</p>
+      </div>
+      <div class="sk-portal-actions">
+        <button class="sk-btn sk-btn-primary" @click="showPostModal = true">
+          <i class="fas fa-plus"></i> Create Post
+        </button>
       </div>
     </div>
 
     <div class="forum-container">
       <div class="forum-grid">
         <!-- Sidebar for filters -->
-        <aside class="forum-sidebar">
-          <div class="sidebar-section">
-            <h3>Filter Posts</h3>
-                      <div class="sidebar-section">
-            <button class="refresh-btn" @click="refreshPosts" :disabled="isRefreshing">
-              <i class="fas" :class="isRefreshing ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
-              {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
-            </button>
-          </div>
+        <aside class="forum-sidebar sk-card">
+          <div class="sk-card-body">
+            <div class="sidebar-section">
+              <h3>Filter Posts</h3>
+              <button class="sk-btn sk-btn-secondary refresh-btn" @click="refreshPosts" :disabled="isRefreshing">
+                <i class="fas" :class="isRefreshing ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+              </button>
+            </div>
             <div class="filter-tabs">
               <button 
                 v-for="tab in tabs" 
                 :key="tab.id" 
-                :class="{ active: activeTab === tab.id }"
+                :class="['sk-btn', 'sk-btn-secondary', { active: activeTab === tab.id }]"
                 @click="activeTab = tab.id"
               >
                 {{ tab.label }}
               </button>
             </div>
           </div>
-
         </aside>
 
         <!-- Main content area -->
         <main class="forum-main">
-          <div class="search-box">
+          <div class="search-box sk-form-group">
             <i class="fas fa-search"></i>
             <input 
               type="text" 
+              class="sk-form-input"
               placeholder="Search posts..." 
               v-model="searchQuery"
             >
@@ -55,26 +57,25 @@
             <div 
               v-for="post in filteredPosts" 
               :key="post.id" 
-              class="post-card"
+              class="post-card sk-card"
               :class="{ 'featured-post': post.isFeatured }"
             >
-              <div class="post-header">
+              <div class="sk-card-header post-header">
                 <div class="author-info">
-                
                   <div>
                     <h4>{{ post.authorName }}</h4>
                     <span class="post-date">{{ formatDate(post.createdAt) }}</span>
-                    <span v-if="post.isFeatured" class="featured-badge">
+                    <span v-if="post.isFeatured" class="sk-badge sk-badge-warning">
                       <i class="fas fa-star"></i> Featured
                     </span>
                   </div>
                 </div>
                 <div class="post-actions" v-if="post.authorId === currentUser?.uid || isAdmin">
                   <div class="dropdown">
-                    <button class="dropdown-toggle" type="button">
+                    <button class="dropdown-toggle sk-btn sk-btn-icon" type="button">
                       <i class="fas fa-ellipsis-v"></i>
                     </button>
-                    <div class="dropdown-menu">
+                    <div class="dropdown-menu sk-card">
                       <a href="#" @click.prevent="editPost(post)"><i class="fas fa-edit"></i> Edit</a>
                       <a href="#" @click.prevent="deletePost(post.id)"><i class="fas fa-trash"></i> Delete</a>
                       <a 
@@ -89,7 +90,7 @@
                 </div>
               </div>
               
-              <div class="post-content">
+              <div class="sk-card-body post-content">
                 <h3 @click="togglePostExpansion(post.id)" class="post-title">
                   {{ post.title }}
                   <i 
@@ -105,20 +106,20 @@
                 </div>
               </div>
               
-              <div class="post-footer">
+              <div class="sk-card-footer post-footer">
                 <div class="post-stats">
-                  <span class="likes" @click="toggleLike(post)">
+                  <span class="likes sk-btn sk-btn-icon" @click="toggleLike(post)">
                     <i class="fas" :class="{ 'fa-heart liked': post.likes?.includes(currentUser?.uid), 'fa-heart': !post.likes?.includes(currentUser?.uid) }"></i>
                     {{ post.likes?.length || 0 }}
                   </span>
-                  <span class="comments" @click="toggleComments(post.id)">
+                  <span class="comments sk-btn sk-btn-icon" @click="toggleComments(post.id)">
                     <i class="fas fa-comment"></i>
                     {{ post.comments?.length || 0 }}
                   </span>
                 </div>
                 
                 <div class="post-tags" v-if="post.tags?.length">
-                  <span v-for="tag in post.tags" :key="tag" class="tag">
+                  <span v-for="tag in post.tags" :key="tag" class="sk-badge sk-badge-primary">
                     {{ tag }}
                   </span>
                 </div>
@@ -134,7 +135,7 @@
                         <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
                         <button 
                           v-if="comment.authorId === currentUser?.uid || isAdmin" 
-                          class="delete-comment"
+                          class="delete-comment sk-btn sk-btn-icon"
                           @click="deleteComment(post.id, comment.id)"
                         >
                           <i class="fas fa-times"></i>
@@ -149,11 +150,12 @@
                   <div class="comment-input">
                     <input 
                       type="text" 
+                      class="sk-form-input"
                       placeholder="Write a comment..." 
                       v-model="newComments[post.id]"
                       @keyup.enter="addComment(post.id)"
                     >
-                    <button @click="addComment(post.id)">
+                    <button class="sk-btn sk-btn-primary sk-btn-icon" @click="addComment(post.id)">
                       <i class="fas fa-paper-plane"></i>
                     </button>
                   </div>
@@ -163,7 +165,7 @@
             
             <!-- Loading skeleton -->
             <div v-if="loadingPosts" class="posts-loading">
-              <div v-for="n in 3" :key="n" class="post-skeleton">
+              <div v-for="n in 3" :key="n" class="post-skeleton sk-card">
                 <div class="skeleton-header">
                   <div class="skeleton-avatar"></div>
                   <div class="skeleton-author"></div>
@@ -177,20 +179,20 @@
           </div>
           
           <!-- Empty state -->
-          <div class="empty-state" v-if="filteredPosts.length === 0 && !loadingPosts">
-            <div class="empty-icon">
+          <div class="empty-state sk-empty-state" v-if="filteredPosts.length === 0 && !loadingPosts">
+            <div class="sk-empty-icon">
               <i class="fas fa-comments"></i>
             </div>
-            <h3>No posts found</h3>
-            <p>Try adjusting your search or be the first to create a post!</p>
-            <button class="new-post-btn" @click="showPostModal = true">
+            <h3 class="sk-empty-title">No posts found</h3>
+            <p class="sk-empty-description">Try adjusting your search or be the first to create a post!</p>
+            <button class="sk-btn sk-btn-primary" @click="showPostModal = true">
               <i class="fas fa-plus"></i> Create First Post
             </button>
           </div>
           
           <!-- Load more button -->
           <div class="load-more" v-if="hasMorePosts && !loadingPosts && filteredPosts.length > 0">
-            <button @click="loadMorePosts" :disabled="loadingMore">
+            <button class="sk-btn sk-btn-secondary" @click="loadMorePosts" :disabled="loadingMore">
               <i class="fas" :class="loadingMore ? 'fa-spinner fa-spin' : 'fa-arrow-down'"></i>
               {{ loadingMore ? 'Loading...' : 'Load More' }}
             </button>
@@ -199,33 +201,37 @@
       </div>
     </div>
     
-    <!-- Modern Post Modal -->
+    <!-- Modern Post Modal - Fixed to prevent scrolling -->
     <transition name="modal">
-      <div class="modal-overlay" v-if="showPostModal" @click.self="closePostModal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>{{ editingPost ? 'Edit Post' : 'Create New Post' }}</h2>
-            <button class="close-btn" @click="closePostModal">
+      <div class="sk-modal-overlay" v-if="showPostModal" @click.self="closePostModal">
+        <div class="sk-modal-content">
+          <div class="sk-modal-header">
+            <h2 class="sk-modal-title">
+              <i class="fas" :class="editingPost ? 'fa-edit' : 'fa-plus'"></i>
+              {{ editingPost ? 'Edit Post' : 'Create New Post' }}
+            </h2>
+            <button class="sk-modal-close" @click="closePostModal">
               <i class="fas fa-times"></i>
             </button>
           </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label>Title</label>
-              <input type="text" v-model="newPost.title" placeholder="What's your post about?">
+          <div class="sk-modal-body">
+            <div class="sk-form-group">
+              <label class="sk-form-label">Title</label>
+              <input type="text" class="sk-form-input" v-model="newPost.title" placeholder="What's your post about?">
             </div>
-            <div class="form-group">
-              <label>Content</label>
-              <textarea v-model="newPost.content" rows="5" placeholder="Share your thoughts..."></textarea>
+            <div class="sk-form-group">
+              <label class="sk-form-label">Content</label>
+              <textarea class="sk-form-textarea" v-model="newPost.content" rows="5" placeholder="Share your thoughts..."></textarea>
             </div>
-            <div class="form-group">
-              <label>Tags (comma separated)</label>
-              <input type="text" v-model="newPost.tags" placeholder="e.g., question, suggestion, announcement">
+            <div class="sk-form-group">
+              <label class="sk-form-label">Tags (comma separated)</label>
+              <input type="text" class="sk-form-input" v-model="newPost.tags" placeholder="e.g., question, suggestion, announcement">
             </div>
           </div>
-          <div class="modal-footer">
-            <button class="cancel-btn" @click="closePostModal">Cancel</button>
-            <button class="submit-btn" @click="savePost" :disabled="isSubmitting">
+          <div class="sk-modal-footer">
+            <button class="sk-btn sk-btn-secondary" @click="closePostModal">Cancel</button>
+            <button class="sk-btn sk-btn-primary" @click="savePost" :disabled="isSubmitting">
+              <i class="fas" :class="isSubmitting ? 'fa-spinner fa-spin' : (editingPost ? 'fa-save' : 'fa-paper-plane')"></i>
               {{ editingPost ? 'Update Post' : 'Publish Post' }}
             </button>
           </div>
@@ -235,37 +241,41 @@
     
     <!-- Image Modal -->
     <transition name="modal">
-      <div class="image-modal-overlay" v-if="showImageModal" @click.self="showImageModal = false">
-        <div class="image-modal-content">
-          <button class="close-btn" @click="showImageModal = false">
-            <i class="fas fa-times"></i>
-          </button>
-          <img :src="selectedImage" alt="Full size">
+      <div class="sk-modal-overlay" v-if="showImageModal" @click.self="showImageModal = false">
+        <div class="sk-modal-content">
+          <div class="sk-modal-header">
+            <h2 class="sk-modal-title">
+              <i class="fas fa-image"></i>
+              Image Preview
+            </h2>
+            <button class="sk-modal-close" @click="showImageModal = false">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="sk-modal-body">
+            <img :src="selectedImage" alt="Full size" style="max-width: 100%; height: auto;">
+          </div>
         </div>
       </div>
     </transition>
     
     <!-- Success Toast -->
     <transition name="toast">
-      <div class="toast" v-if="showToast">
+      <div class="toast sk-card" v-if="showToast">
         <i class="fas fa-check-circle"></i>
         {{ editingPost ? 'Post updated successfully!' : 'Post published successfully!' }}
       </div>
     </transition>
 
     <!-- Floating action button -->
-    <button class="fab" @click="showPostModal = true">
+    <button class="fab sk-btn sk-btn-primary" @click="showPostModal = true">
       <i class="fas fa-plus"></i>
     </button>
-
-      <br>
   </div>
-
-
 </template>
 
-
 <script>
+// ... (keep the same script section as your original code)
 import { db, auth, storage } from '@/firebase/config';
 import { 
   collection, addDoc, updateDoc, deleteDoc, doc, 
@@ -696,269 +706,183 @@ export default {
 </script>
 
 <style scoped>
-/* Modern UI Styles */
+/* Use your existing SK Portal Design System CSS variables */
+:root {
+  /* Colors */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  
+  --success-50: #ecfdf5;
+  --success-500: #10b981;
+  --success-600: #059669;
+  
+  --warning-50: #fffbeb;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  
+  --error-50: #fef2f2;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+  
+  /* Typography */
+  --font-family: 'Inter', 'Segoe UI', Roboto, -apple-system, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 30px 0 rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 10px 40px 0 rgba(0, 0, 0, 0.15);
+}
+
 .sk-forum {
-  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  color: #333;
+  font-family: var(--font-family);
+  color: var(--gray-800);
+  background-color: var(--gray-50);
   min-height: 100vh;
-  background-color: #f8f9fa;
-}
-
-.forum-header {
-  background: linear-gradient(135deg, #2c3e50, #3498db);
-  color: white;
-  padding: 3rem 0;
-  margin-bottom: 2rem;
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  text-align: left;
-}
-
-.header-content h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.header-content p {
-  font-size: 1.1rem;
-  opacity: 0.9;
-  margin-bottom: 1.5rem;
-}
-
-.new-post-btn {
-  background-color: #fff;
-  color: #3498db;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 50px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.new-post-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .forum-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
+  margin-top: var(--space-8);
 }
 
 .forum-grid {
   display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 2rem;
+  grid-template-columns: 280px 1fr;
+  gap: var(--space-6);
 }
 
 .forum-sidebar {
-  padding: 1rem;
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  height: fit-content;
+  position: sticky;
+  top: var(--space-8);
 }
 
 .sidebar-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-6);
 }
 
 .sidebar-section h3 {
-  font-size: 1.2rem;
+  font-size: var(--text-lg);
   font-weight: 600;
-  margin-bottom: 1rem;
-  color: #2c3e50;
+  margin-bottom: var(--space-4);
+  color: var(--gray-800);
 }
 
 .filter-tabs {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.filter-tabs button {
-  background: none;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.3s ease;
-}
-
-.filter-tabs button.active {
-  background-color: #3498db;
-  color: white;
-  border-color: #3498db;
-}
-
-.filter-tabs button:hover:not(.active) {
-  background-color: #f1f1f1;
-}
-
-.refresh-btn {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  justify-content: center;
-}
-
-.refresh-btn:hover {
-  background-color: #e9ecef;
-  border-color: #ced4da;
-}
-
-.refresh-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+  gap: var(--space-2);
 }
 
 .forum-main {
-  padding: 1rem;
+  min-height: 500px;
 }
 
 .search-box {
   position: relative;
-  max-width: 900px;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-6);
 }
 
 .search-box i {
   position: absolute;
-  left: 1rem;
+  left: var(--space-4);
   top: 50%;
   transform: translateY(-50%);
-  color: #6c757d;
+  color: var(--gray-400);
+  z-index: 2;
 }
 
-.search-box input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.search-box input:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-  outline: none;
+.search-box .sk-form-input {
+  padding-left: calc(var(--space-4) * 2.5);
 }
 
 .posts-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
-.post-card {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  border: 1px solid #f0f0f0;
-  overflow: hidden;
-}
-
-.post-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.featured-post {
-  border-left: 4px solid #3498db;
-  background-color: #f8fbfe;
+.post-card.featured-post {
+  border-left: 4px solid var(--warning-500);
+  background: linear-gradient(135deg, var(--warning-50), white);
 }
 
 .post-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.author-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.author-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
+  align-items: flex-start;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--gray-100);
 }
 
 .author-info h4 {
-  margin: 0;
-  font-size: 0.95rem;
+  margin: 0 0 var(--space-1) 0;
+  font-size: var(--text-base);
   font-weight: 600;
+  color: var(--gray-800);
 }
 
 .post-date {
-  font-size: 0.75rem;
-  color: #6c757d;
+  font-size: var(--text-sm);
+  color: var(--gray-500);
   display: block;
-}
-
-.featured-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background-color: #f8f9fa;
-  color: #ffc107;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  margin-top: 0.25rem;
+  margin-bottom: var(--space-2);
 }
 
 .post-actions {
   position: relative;
 }
 
-.dropdown-toggle {
-  background: none;
-  border: none;
-  color: #6c757d;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
-.dropdown-toggle:hover {
-  background-color: #f1f1f1;
-}
-
 .dropdown-menu {
   position: absolute;
   right: 0;
   top: 100%;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
   min-width: 160px;
-  z-index: 10;
+  z-index: 50;
   display: none;
+  border: 1px solid var(--gray-200);
 }
 
 .dropdown:hover .dropdown-menu {
@@ -966,52 +890,61 @@ export default {
 }
 
 .dropdown-menu a {
-  display: block;
-  padding: 0.75rem 1rem;
-  color: #333;
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  color: var(--gray-700);
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   transition: all 0.2s ease;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.dropdown-menu a:last-child {
+  border-bottom: none;
 }
 
 .dropdown-menu a:hover {
-  background-color: #f8f9fa;
+  background-color: var(--gray-50);
+  color: var(--gray-900);
 }
 
 .dropdown-menu i {
-  width: 20px;
+  width: 16px;
+  margin-right: var(--space-3);
   text-align: center;
-  margin-right: 0.5rem;
 }
 
 .post-content {
-  padding: 1rem;
+  padding: var(--space-6);
 }
 
 .post-title {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.1rem;
+  margin: 0 0 var(--space-4) 0;
+  font-size: var(--text-xl);
   font-weight: 600;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: var(--gray-900);
 }
 
 .post-title i {
-  font-size: 0.85rem;
-  color: #6c757d;
+  font-size: var(--text-sm);
+  color: var(--gray-400);
+  transition: transform 0.2s ease;
 }
 
 .post-body {
-  margin-top: 0.75rem;
-  line-height: 1.5;
-  font-size: 0.9rem;
+  margin-top: var(--space-4);
+  line-height: 1.6;
+  color: var(--gray-700);
 }
 
 .post-image {
-  margin-top: 0.75rem;
-  border-radius: 8px;
+  margin-top: var(--space-4);
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
@@ -1019,7 +952,7 @@ export default {
   width: 100%;
   max-height: 300px;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: zoom-in;
   transition: transform 0.3s ease;
 }
@@ -1029,72 +962,50 @@ export default {
 }
 
 .post-footer {
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: var(--space-4) var(--space-6);
 }
 
 .post-stats {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
-.post-stats span {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-  color: #6c757d;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.post-stats .sk-btn {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
 }
 
-.post-stats span:hover {
-  color: #3498db;
-}
-
-.post-stats .liked {
-  color: #e74c3c;
+.post-stats .likes.liked {
+  color: var(--error-500);
 }
 
 .post-tags {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
-.tag {
-  background-color: #f1f8ff;
-  color: #3498db;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-}
-
 .comments-section {
-  border-top: 1px solid #f0f0f0;
-  padding: 0.75rem 1rem;
-  background-color: #f9f9f9;
+  border-top: 1px solid var(--gray-100);
+  padding: var(--space-4) var(--space-6);
+  background-color: var(--gray-50);
 }
 
 .comment-list {
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-4);
 }
 
 .comment {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.comment-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
 }
 
 .comment-content {
@@ -1104,28 +1015,25 @@ export default {
 .comment-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .comment-author {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
+  color: var(--gray-800);
 }
 
 .comment-date {
-  font-size: 0.7rem;
-  color: #6c757d;
+  font-size: var(--text-xs);
+  color: var(--gray-500);
 }
 
 .delete-comment {
   margin-left: auto;
-  background: none;
-  border: none;
-  color: #e74c3c;
-  cursor: pointer;
   opacity: 0;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .comment:hover .delete-comment {
@@ -1134,109 +1042,67 @@ export default {
 
 .add-comment {
   display: flex;
-  gap: 0.75rem;
-  align-items: center;
+  gap: var(--space-3);
 }
 
 .comment-input {
   flex-grow: 1;
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
-.comment-input input {
+.comment-input .sk-form-input {
   flex-grow: 1;
-  padding: 0.5rem 1rem;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  font-size: 0.85rem;
-}
-
-.comment-input button {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.comment-input button:hover {
-  background-color: #2980b9;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 2rem 0;
-}
-
-.empty-icon {
-  font-size: 2.5rem;
-  color: #6c757d;
-  margin-bottom: 0.75rem;
-}
-
-.empty-state h3 {
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  font-size: 1.2rem;
-}
-
-.empty-state p {
-  color: #6c757d;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
 }
 
 .posts-loading {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .post-skeleton {
-  background-color: white;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: var(--space-6);
 }
 
 .skeleton-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .skeleton-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #f0f0f0;
+  background-color: var(--gray-200);
+  animation: pulse 2s infinite;
 }
 
 .skeleton-author {
   height: 16px;
-  width: 100px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
+  width: 120px;
+  background-color: var(--gray-200);
+  border-radius: var(--radius-sm);
+  animation: pulse 2s infinite;
 }
 
 .skeleton-title {
   height: 20px;
   width: 80%;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-  margin-bottom: 0.75rem;
+  background-color: var(--gray-200);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-3);
+  animation: pulse 2s infinite;
 }
 
 .skeleton-content {
   height: 14px;
   width: 100%;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
+  background-color: var(--gray-200);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-2);
+  animation: pulse 2s infinite;
 }
 
 .skeleton-content.shorter {
@@ -1246,428 +1112,112 @@ export default {
 .skeleton-footer {
   height: 16px;
   width: 60%;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-  margin-top: 0.75rem;
+  background-color: var(--gray-200);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .load-more {
   display: flex;
   justify-content: center;
-  margin-top: 1.5rem;
+  margin-top: var(--space-6);
 }
 
-.load-more button {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+/* Modal fixes to prevent scrolling */
+.sk-modal-content {
+  max-height: none !important;
+  overflow-y: visible !important;
 }
 
-.load-more button:hover {
-  background-color: #e9ecef;
-  border-color: #ced4da;
+.sk-modal-body {
+  overflow-y: visible !important;
+  max-height: none !important;
 }
 
-.load-more button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.modal-overlay {
+/* Toast */
+.toast {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: var(--space-8);
+  right: var(--space-8);
+  background: var(--success-500);
+  color: white;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius);
   display: flex;
-  justify-content: center;
   align-items: center;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
 }
 
-.modal-content {
-  background-color: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  transform: translateY(100px);
-  transition: all 0.3s ease-out;
-}
-
-.modal-enter-active .modal-content,
-.modal-leave-active .modal-content {
-  transform: translateY(0);
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: translateY(100px);
-  opacity: 0;
-}
-
-.modal-overlay.modal-enter-active,
-.modal-overlay.modal-leave-active {
-  transition: all 0.3s ease-out;
-}
-
-.modal-overlay.modal-enter-from,
-.modal-overlay.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-header {
-  padding: 1rem;
-  border-bottom: 1px solid #f0f0f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(135deg, #f8f9fa, #ffffff);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.1rem;
-  color: #6c757d;
-  cursor: pointer;
-  padding: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-  color: #e74c3c;
-  transform: rotate(90deg);
-}
-
-.modal-body {
-  padding: 1rem;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 0.5rem 1rem;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  background-color: #f8f9fa;
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-  outline: none;
-  background-color: white;
-}
-
-.image-upload {
-  border: 2px dashed #dee2e6;
-  border-radius: 8px;
-  padding: 1rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  background-color: #f8f9fa;
-}
-
-.image-upload:hover {
-  border-color: #3498db;
-  background-color: #e9ecef;
-}
-
-.image-upload input[type="file"] {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.upload-placeholder {
-  color: #6c757d;
-}
-
-.upload-placeholder i {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-  display: block;
-}
-
-.upload-preview {
-  position: relative;
-}
-
-.upload-preview img {
-  max-width: 100%;
-  max-height: 150px;
-  border-radius: 8px;
-  display: block;
-  margin: 0 auto;
-}
-
-.upload-preview button {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.upload-preview button:hover {
-  background-color: #c0392b;
-}
-
-.modal-footer {
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  background: linear-gradient(135deg, #f8f9fa, #ffffff);
-}
-
-.cancel-btn {
-  background-color: #f8f9fa;
-  color: #333;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  background-color: #e9ecef;
-  transform: translateY(-2px);
-}
-
-.submit-btn {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.submit-btn:hover {
-  background-color: #2980b9;
-  transform: translateY(-2px);
-}
-
-.submit-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-  transform: none;
-}
-
+/* FAB */
 .fab {
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  width: 50px;
-  height: 50px;
-  background-color: #3498db;
-  color: white;
-  border: none;
+  bottom: var(--space-8);
+  right: var(--space-8);
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: all 0.3s ease;
+  font-size: var(--text-lg);
   z-index: 100;
 }
 
-.fab:hover {
-  transform: scale(1.1);
-  background-color: #2980b9;
-}
-
-.toast {
-  position: fixed;
-  top: 1.5rem;
-  right: 1.5rem;
-  background-color: #2ecc71;
-  color: white;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-}
-
-.toast i {
-  font-size: 1.1rem;
-}
-
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s ease;
-}
-
-.toast-enter-from,
-.toast-leave-to {
-  transform: translateX(100px);
-  opacity: 0;
-}
-
-.image-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.9);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.image-modal-content {
-  position: relative;
-  max-width: 90%;
-  max-height: 90%;
-}
-
-.image-modal-content img {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  border-radius: 8px;
-}
-
-.image-modal-content .close-btn {
-  position: absolute;
-  top: -30px;
-  right: 0;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* Responsive */
+@media (max-width: 1024px) {
   .forum-grid {
     grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
-
+  
   .forum-sidebar {
-    border-radius: 8px;
-    padding: 0.75rem;
+    position: static;
   }
-
-  .forum-header {
-    padding: 1.5rem 0;
-  }
-
-  .header-content h1 {
-    font-size: 1.8rem;
-  }
-
-  .search-box {
-    max-width: 100%;
-  }
-
+  
   .filter-tabs {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 0.25rem;
   }
+}
 
-  .filter-tabs button {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-  }
-
+@media (max-width: 768px) {
   .post-header {
-    padding: 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
   }
-
-  .post-content, .post-footer {
-    padding: 0.75rem;
+  
+  .post-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
   }
-
-  .comments-section {
-    padding: 0.5rem 0.75rem;
+  
+  .post-stats {
+    width: 100%;
+    justify-content: flex-start;
   }
-
-  .modal-content {
-    width: 90%;
-  }
-
-  .image-modal-content {
-    max-width: 95%;
-  }
-
+  
   .fab {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
-    bottom: 1rem;
-    right: 1rem;
+    bottom: var(--space-4);
+    right: var(--space-4);
+    width: 48px;
+    height: 48px;
   }
-
+  
   .toast {
-    top: 1rem;
-    right: 1rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
+    top: var(--space-4);
+    right: var(--space-4);
+    left: var(--space-4);
   }
 }
 </style>

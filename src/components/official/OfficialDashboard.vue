@@ -88,6 +88,43 @@
         </table>
       </div>
     </div>
+
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h3><i class="fas fa-flag"></i> Recent Reports</h3>
+      </div>
+      
+      <div class="table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Report ID</th>
+              <th>Resident Name</th>
+              <th>Report Type</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="report in sortedRecentReports" :key="report.id">
+              <td>{{ report.id.length > 8 ? report.id.substring(0, 8) + '...' : report.id }}</td>
+              <td>
+                <div class="user-info">
+                  {{ report.userName }}
+                </div>
+              </td>
+              <td>{{ report.reportType }}</td>
+              <td>{{ formatDate(report.createdAt) }}</td>
+              <td>
+                <span :class="'status-badge ' + report.status">
+                  {{ report.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -101,15 +138,20 @@ export default {
       stats: {
         totalResidents: 0,
         pendingRequests: 0,
-        completedRequests: 0
+        completedRequests: 0,
+        pendingReports: 0,
+        resolvedReports: 0
       },
       recentRequests: [],
+      recentReports: [],
       currentTime: new Date().toLocaleString(),
       showNotifications: false,
       notifications: [],
       unreadCount: 0,
       unsubscribeRequests: null,
-      lastRequestCount: 0
+      unsubscribeReports: null,
+      lastRequestCount: 0,
+      lastReportCount: 0
     }
   },
   computed: {
@@ -129,17 +171,36 @@ export default {
           iconClass: "bg-orange",
           trendIcon: "fas fa-caret-up"
         },
+        // {
+        //   title: "Completed Requests",
+        //   value: this.stats.completedRequests,
+        //   icon: "fas fa-check-circle",
+        //   iconClass: "bg-green",
+        //   trendIcon: "fas fa-caret-up"
+        // },
         {
-          title: "Completed Requests",
-          value: this.stats.completedRequests,
-          icon: "fas fa-check-circle",
-          iconClass: "bg-green",
+          title: "Pending Reports",
+          value: this.stats.pendingReports,
+          icon: "fas fa-exclamation-triangle",
+          iconClass: "bg-yellow",
           trendIcon: "fas fa-caret-up"
-        }
+        },
+        // {
+        //   title: "Resolved Reports",
+        //   value: this.stats.resolvedReports,
+        //   icon: "fas fa-check",
+        //   iconClass: "bg-green",
+        //   trendIcon: "fas fa-caret-up"
+        // }
       ]
     },
     sortedRecentRequests() {
       return [...this.recentRequests].sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt)
+      })
+    },
+    sortedRecentReports() {
+      return [...this.recentReports].sort((a, b) => {
         return new Date(b.createdAt) - new Date(a.createdAt)
       })
     }
@@ -147,6 +208,7 @@ export default {
   async created() {
     await this.fetchStats()
     await this.fetchRecentRequests()
+    await this.fetchRecentReports()
     this.setupRealTimeNotifications()
     
     setInterval(() => {
@@ -156,6 +218,9 @@ export default {
   beforeUnmount() {
     if (this.unsubscribeRequests) {
       this.unsubscribeRequests()
+    }
+    if (this.unsubscribeReports) {
+      this.unsubscribeReports()
     }
   },
   methods: {
@@ -182,6 +247,17 @@ export default {
       )
       const completedSnapshot = await getDocs(completedQuery)
       this.stats.completedRequests = completedSnapshot.size
+
+      // Get pending reports count
+      const pendingReportsQuery = query(collection(db, 'reports'), where('status', '==', 'pending'))
+      const pendingReportsSnapshot = await getDocs(pendingReportsQuery)
+      this.stats.pendingReports = pendingReportsSnapshot.size
+      this.lastReportCount = pendingReportsSnapshot.size
+
+      // Get resolved reports count
+      const resolvedQuery = query(collection(db, 'reports'), where('status', '==', 'resolved'))
+      const resolvedSnapshot = await getDocs(resolvedQuery)
+      this.stats.resolvedReports = resolvedSnapshot.size
     },
 
     async fetchRecentRequests() {
@@ -205,10 +281,32 @@ export default {
       })
     },
 
+    async fetchRecentReports() {
+      const q = query(
+        collection(db, 'reports'),
+        orderBy('createdAt', 'desc'),
+        limit(5)
+      )
+
+      const snapshot = await getDocs(q)
+      this.recentReports = snapshot.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          userName: data.userName || 'Unknown',
+          reportType: data.reportType || 'Unknown',
+          status: data.status || 'pending',
+          createdAt: data.createdAt?.toDate?.() || null,
+          updatedAt: data.updatedAt?.toDate?.() || null
+        }
+      })
+    },
+
     setupRealTimeNotifications() {
-      const q = query(collection(db, 'requests'), orderBy('createdAt', 'desc'))
+      // Requests listener
+      const requestsQuery = query(collection(db, 'requests'), orderBy('createdAt', 'desc'))
       
-      this.unsubscribeRequests = onSnapshot(q, (snapshot) => {
+      this.unsubscribeRequests = onSnapshot(requestsQuery, (snapshot) => {
         // Check for new requests
         const currentCount = snapshot.docs.filter(doc => 
           doc.data().status === 'pending').length
@@ -230,6 +328,38 @@ export default {
             id: data.id || doc.id,
             userName: data.userName || 'Unknown',
             type: data.type || data.documentType || 'Unknown',
+            status: data.status || 'pending',
+            createdAt: data.createdAt?.toDate?.() || null,
+            updatedAt: data.updatedAt?.toDate?.() || null
+          }
+        })
+      })
+
+      // Reports listener
+      const reportsQuery = query(collection(db, 'reports'), orderBy('createdAt', 'desc'))
+      
+      this.unsubscribeReports = onSnapshot(reportsQuery, (snapshot) => {
+        // Check for new reports
+        const currentCount = snapshot.docs.filter(doc => 
+          doc.data().status === 'pending').length
+        
+        if (currentCount > this.lastReportCount) {
+          const newReports = currentCount - this.lastReportCount
+          this.addNotification(
+            'new_report',
+            `${newReports} new report${newReports > 1 ? 's' : ''} received`,
+            new Date()
+          )
+        }
+        this.lastReportCount = currentCount
+        
+        // Update recent reports
+        this.recentReports = snapshot.docs.slice(0, 5).map(doc => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            userName: data.userName || 'Unknown',
+            reportType: data.reportType || 'Unknown',
             status: data.status || 'pending',
             createdAt: data.createdAt?.toDate?.() || null,
             updatedAt: data.updatedAt?.toDate?.() || null
@@ -290,11 +420,17 @@ export default {
         this.fetchRecentRequests()
         this.fetchStats()
       }
+      if (notification.type === 'new_report') {
+        // Navigate to reports page or refresh data
+        this.fetchRecentReports()
+        this.fetchStats()
+      }
     },
 
     getNotificationIcon(type) {
       switch (type) {
         case 'new_request': return 'fa-file-alt'
+        case 'new_report': return 'fa-flag'
         case 'status_update': return 'fa-sync-alt'
         default: return 'fa-info-circle'
       }
@@ -568,6 +704,10 @@ export default {
   background: linear-gradient(135deg, #2ecc71, #27ae60);
 }
 
+.bg-yellow {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
 .stat-content h3 {
   font-size: 1rem;
   font-weight: 500;
@@ -690,6 +830,16 @@ export default {
   color: #721c24;
 }
 
+.status-badge.in-progress {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.resolved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
 @media (max-width: 768px) {
   .dashboard-header {
     flex-direction: column;
@@ -716,4 +866,4 @@ export default {
     padding: 0.75rem 0.5rem;
   }
 }
-</style> 
+</style>
