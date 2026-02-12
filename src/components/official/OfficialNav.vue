@@ -53,6 +53,15 @@
               <span class="nav-text">Reports</span>
             </router-link>
           </li>
+
+          <!-- NEW: Templates -->
+          <li class="nav-item">
+            <router-link class="nav-link" active-class="active" to="/official/templates">
+              <i class="nav-icon fas fa-certificate"></i>
+              <span class="nav-text">Templates</span>
+            </router-link>
+          </li>
+          
           <li class="nav-item">
   <router-link class="nav-link" active-class="active" to="/official/settings">
     <i class="nav-icon fas fa-cog"></i>

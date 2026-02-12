@@ -51,6 +51,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Analytics Section -->
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h3><i class="fas fa-chart-line"></i> Analytics</h3>
+      </div>
+      <div class="analytics-grid">
+        <div class="chart-card">
+          <h4>Request Types</h4>
+          <div class="chart-container">
+            <canvas id="requestTypeChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h4>Request Demographics (Age)</h4>
+          <div class="chart-container">
+            <canvas id="ageChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h4>Request Demographics (Gender)</h4>
+          <div class="chart-container">
+            <canvas id="genderChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
     
     <div class="dashboard-section">
       <div class="section-header">
@@ -209,6 +236,7 @@ export default {
     await this.fetchStats()
     await this.fetchRecentRequests()
     await this.fetchRecentReports()
+    await this.fetchAnalytics()
     this.setupRealTimeNotifications()
     
     setInterval(() => {
@@ -300,6 +328,162 @@ export default {
           updatedAt: data.updatedAt?.toDate?.() || null
         }
       })
+    },
+
+    async fetchAnalytics() {
+        try {
+            // 1. Fetch all residents to build demographic map
+            const residentsQuery = query(collection(db, 'users'), where('role', '==', 'resident'));
+            const residentsSnapshot = await getDocs(residentsQuery);
+            const userMap = {};
+            
+            residentsSnapshot.forEach(doc => {
+                const data = doc.data();
+                userMap[doc.id] = {
+                    gender: data.gender ? data.gender.toLowerCase() : 'unknown',
+                    birthdate: data.birthdate
+                };
+            });
+
+            // 2. Fetch all requests
+            // In a large app, you would use aggregation queries or process this in a cloud function.
+            // For this app, fetching all is acceptable.
+            const requestsQuery = query(collection(db, 'requests'));
+            const requestsSnapshot = await getDocs(requestsQuery);
+
+            const typeCounts = {};
+            const ageCounts = { '0-17': 0, '18-29': 0, '30-49': 0, '50-64': 0, '65+': 0, 'Unknown': 0 };
+            const genderCounts = { 'male': 0, 'female': 0, 'other': 0, 'unknown': 0 };
+
+            requestsSnapshot.forEach(doc => {
+                const data = doc.data();
+                const type = data.type || data.documentType || 'Other';
+                
+                // Count Types
+                typeCounts[type] = (typeCounts[type] || 0) + 1;
+
+                // Demographics
+                const userId = data.userId;
+                if (userId && userMap[userId]) {
+                    const user = userMap[userId];
+                    
+                    // Gender
+                    const gender = user.gender;
+                    if (genderCounts[gender] !== undefined) {
+                        genderCounts[gender]++;
+                    } else {
+                        genderCounts['unknown']++;
+                    }
+
+                    // Age
+                    if (user.birthdate) {
+                        const age = this.calculateAge(user.birthdate);
+                        if (age < 18) ageCounts['0-17']++;
+                        else if (age < 30) ageCounts['18-29']++;
+                        else if (age < 50) ageCounts['30-49']++;
+                        else if (age < 65) ageCounts['50-64']++;
+                        else ageCounts['65+']++;
+                    } else {
+                        ageCounts['Unknown']++;
+                    }
+                } else {
+                    genderCounts['unknown']++;
+                    ageCounts['Unknown']++;
+                }
+            });
+
+            this.analyticsData = { typeCounts, ageCounts, genderCounts };
+            this.renderCharts();
+
+        } catch (error) {
+            console.error("Error fetching analytics:", error);
+        }
+    },
+
+    calculateAge(birthdateString) {
+        if (!birthdateString) return -1;
+        const today = new Date();
+        const birthDate = new Date(birthdateString);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    },
+
+    renderCharts() {
+        const { typeCounts, ageCounts, genderCounts } = this.analyticsData;
+
+        // 1. Request Types (Doughnut)
+        const typeCtx = document.getElementById('requestTypeChart');
+        if (typeCtx) {
+            new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(typeCounts).map(k => k.replace(/-/g, ' ').toUpperCase()),
+                    datasets: [{
+                        data: Object.values(typeCounts),
+                        backgroundColor: [
+                            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        }
+
+        // 2. Age (Bar)
+        const ageCtx = document.getElementById('ageChart');
+        if (ageCtx) {
+            new Chart(ageCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(ageCounts),
+                    datasets: [{
+                        label: 'Requests by Age',
+                        data: Object.values(ageCounts),
+                        backgroundColor: '#36b9cc'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // 3. Gender (Pie/Doughnut)
+        const genderCtx = document.getElementById('genderChart');
+        if (genderCtx) {
+             const genderLabels = Object.keys(genderCounts).map(g => g.charAt(0).toUpperCase() + g.slice(1));
+             new Chart(genderCtx, {
+                type: 'pie',
+                data: {
+                    labels: genderLabels,
+                    datasets: [{
+                        data: Object.values(genderCounts),
+                        backgroundColor: ['#4e73df', '#e74a3b', '#f6c23e', '#858796'] // Male(Blue), Female(Red), Other(Yellow), Unknown(Gray)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }
+            });
+        }
     },
 
     setupRealTimeNotifications() {
@@ -481,6 +665,35 @@ export default {
 </script>
 
 <style scoped>
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e3e6f0;
+}
+
+.chart-card h4 {
+    margin-bottom: 1rem;
+    color: #5a5c69;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
 .official-dashboard {
   padding: 2rem;
   max-width: 1200px;

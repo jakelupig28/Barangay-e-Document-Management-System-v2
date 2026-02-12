@@ -23,6 +23,7 @@ import RequestForm from '@/components/resident/RequestForm.vue';
 import OfficialDashboard from '@/components/official/OfficialDashboard.vue';
 import ManageResidents from '@/components/official/ManageResidents.vue';
 import ManageRequests from '@/components/official/ManageRequests.vue';
+import CertificateTemplates from '@/components/official/CertificateTemplates.vue';
 
 
 // SK Official components
@@ -99,6 +100,12 @@ const routes = [
     name: 'official-settings',
     component: () => import('@/components/official/BarangaySettings.vue'),
     meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Barangay Settings' },
+  },
+  {
+    path: '/official/templates',
+    name: 'certificate-templates',
+    component: () => import('@/components/official/CertificateTemplates.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Certificate Templates' },
   },
 {
   path: '/official/resident/:id',

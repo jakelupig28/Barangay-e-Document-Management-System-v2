@@ -90,14 +90,6 @@
                     <button
                       type="button"
                       class="btn btn-outline-primary btn-sm flex-grow-1"
-                      :class="{ 'active': selectedRole === 'sk' }"
-                      @click="selectedRole = 'sk'"
-                    >
-                      <i class="bi bi-people me-1"></i> SK Member
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-outline-primary btn-sm flex-grow-1"
                       :class="{ 'active': selectedRole === 'admin' }"
                       @click="selectedRole = 'admin'"
                     >
@@ -157,6 +149,25 @@
                     </router-link>
                   </div>
 
+                  <!-- Demo Accounts -->
+                  <div class="row mb-3 g-2">
+                    <div class="col-4">
+                      <button type="button" class="btn btn-outline-secondary btn-sm w-100" @click="setupAndLogin('admin')">
+                        <i class="bi bi-shield-lock me-1"></i> Admin
+                      </button>
+                    </div>
+                    <div class="col-4">
+                      <button type="button" class="btn btn-outline-secondary btn-sm w-100" @click="setupAndLogin('official')">
+                        <i class="bi bi-person-badge me-1"></i> Official
+                      </button>
+                    </div>
+                    <div class="col-4">
+                      <button type="button" class="btn btn-outline-secondary btn-sm w-100" @click="setupAndLogin('resident')">
+                        <i class="bi bi-person me-1"></i> Resident
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     class="btn btn-primary w-100 py-2 mb-3 fw-bold"
@@ -190,8 +201,8 @@
 
 <script>
 import { auth } from '@/firebase/config';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { Modal } from 'bootstrap';
 
@@ -253,6 +264,136 @@ export default {
         }
       } catch (error) {
         await auth.signOut();
+      }
+    },
+    async setupAndLogin(role) {
+      this.selectedRole = role;
+      const demoAccounts = {
+        admin: {
+          email: 'admin@demo.com',
+          password: 'password123',
+          name: 'Demo Administrator',
+          role: 'admin',
+          position: 'System Administrator',
+          isApproved: true,
+          status: 'approved',
+          roleType: 'administrator',
+          isSuperAdmin: true
+        },
+        official: {
+          email: 'official@demo.com',
+          password: 'password123',
+          name: 'Demo Official',
+          role: 'official',
+          position: 'Barangay Secretary',
+          isApproved: true,
+          status: 'approved',
+          roleType: 'barangay_official'
+        },
+        resident: {
+          email: 'resident@demo.com',
+          password: 'password123',
+          name: 'Demo Resident',
+          role: 'resident',
+          address: 'Block 1 Lot 1 Demo Street',
+          birthdate: '1990-01-01',
+          contact: '09123456789',
+          isApproved: true,
+          status: 'approved',
+          roleType: 'resident'
+        }
+      };
+
+      const account = demoAccounts[role];
+      if (!account) return;
+
+      this.email = account.email;
+      this.password = account.password;
+      this.loading = true;
+
+      try {
+        // Try to login first
+        try {
+          await signInWithEmailAndPassword(auth, account.email, account.password);
+          await this.login();
+        } catch (loginError) {
+          // If login fails, try to create account
+          if (loginError.code === 'auth/user-not-found' || loginError.code === 'auth/invalid-credential') {
+             try {
+                // Check if user exists but with wrong password (if we want to be robust)
+                // or just create if it fails.
+                // Simplified: attempt create
+                const res = await createUserWithEmailAndPassword(auth, account.email, account.password);
+                
+                const userData = {
+                  name: account.name,
+                  email: account.email,
+                  role: account.role,
+                  createdAt: new Date(),
+                  lastUpdated: new Date(),
+                  isApproved: account.isApproved,
+                  status: account.status,
+                  roleType: account.roleType
+                };
+
+                if (role === 'admin') {
+                  userData.adminRole = account.position;
+                  userData.isSuperAdmin = account.isSuperAdmin;
+                } else if (role === 'official') {
+                  userData.position = account.position;
+                  userData.contact = account.contact || '09123456789';
+                } else {
+                  userData.address = account.address;
+                  userData.birthdate = account.birthdate;
+                  userData.contact = account.contact;
+                }
+
+                // Save to users collection
+                await setDoc(doc(db, 'users', res.user.uid), userData);
+
+                // Save to role specific collection
+                if (role === 'admin') {
+                  await setDoc(doc(db, 'administrators', res.user.uid), {
+                    userId: res.user.uid,
+                    email: account.email,
+                    name: account.name,
+                    adminRole: account.position,
+                    isSuperAdmin: account.isSuperAdmin,
+                    permissions: ['full_access', 'user_management', 'content_management', 'settings'],
+                    createdAt: new Date(),
+                    lastUpdated: new Date(),
+                    status: 'approved'
+                  });
+                } else if (role === 'official') {
+                  await setDoc(doc(db, 'officials', res.user.uid), {
+                    userId: res.user.uid,
+                    email: account.email,
+                    name: account.name,
+                    position: account.position,
+                    status: 'approved',
+                    createdAt: new Date(),
+                    lastUpdated: new Date()
+                  });
+                }
+                
+                // Login after creation
+                await this.login();
+             } catch (createError) {
+                // If creation fails (e.g. email exists but password was wrong initially), 
+                // we can't easily fix password without admin SDK or reset.
+                // Just report error.
+                throw createError;
+             }
+          } else {
+            throw loginError;
+          }
+        }
+      } catch (err) {
+        console.error("Demo setup error:", err);
+        this.error = "Could not setup/login demo account: " + err.message;
+        this.errorModal.show();
+      } finally {
+        this.loading = false;
       }
     },
     async login() {

@@ -1,6 +1,9 @@
 <template>
   <div class="printable-document" ref="printableContent">
     <div class="document-header">
+      <button class="no-print back-home-btn" @click="$router.push('/official/dashboard')">
+          <i class="fas fa-home"></i> Back to Dashboard
+      </button>
       <div class="logo">
         <img src="@/assets/bis-logo.png" alt="Barangay Logo" class="logo-img" />
       </div>
@@ -431,6 +434,9 @@ export default {
 }
 
 @media print {
+  .no-print {
+      display: none !important;
+  }
   .printable-document {
     border: none;
     box-shadow: none;
@@ -440,6 +446,28 @@ export default {
   .print-controls {
     display: none !important;
   }
+}
+
+.back-home-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: #0d6efd;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.back-home-btn:hover {
+    background: #0b5ed7;
 }
 
 @media (max-width: 768px) {

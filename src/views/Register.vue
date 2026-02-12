@@ -95,14 +95,6 @@
                       <button
                         type="button"
                         class="btn btn-outline-primary btn-sm"
-                        :class="{ 'active': selectedRole === 'sk' }"
-                        @click="selectedRole = 'sk'"
-                      >
-                        <i class="bi bi-people me-1"></i> SK
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-outline-primary btn-sm"
                         :class="{ 'active': selectedRole === 'admin' }"
                         @click="selectAdminRole"
                       >
