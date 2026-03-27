@@ -159,7 +159,6 @@ export default {
       contact: '',
     });
 
-    const auth = getAuth();
     const user = ref(null);
 
     // Computed
@@ -359,20 +358,29 @@ export default {
     };
 
     // Auth & Mount
-    onMounted(() => {
-      onAuthStateChanged(auth, async (u) => {
-        user.value = u;
+    const isFirebaseReady = () => !!(db && typeof db === 'object' && typeof db.app !== 'undefined');
 
-        if (u) {
-          // Load barangay settings first
-          await fetchBarangaySettings();
-          // Then load request data
-          await fetchRequestData();
-        } else {
-          error.value = 'Please log in to generate documents.';
-          isLoading.value = false;
-        }
-      });
+    onMounted(() => {
+      if (!isFirebaseReady()) {
+        isLoading.value = false;
+        return;
+      }
+      try {
+        const auth = getAuth();
+        onAuthStateChanged(auth, async (u) => {
+          user.value = u;
+  
+          if (u) {
+            await fetchBarangaySettings();
+            await fetchRequestData();
+          } else {
+            error.value = 'Please log in to generate documents.';
+            isLoading.value = false;
+          }
+        });
+      } catch (err) {
+        console.error("Auth init bypassed:", err);
+      }
     });
 
     return {

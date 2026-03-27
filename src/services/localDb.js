@@ -126,6 +126,8 @@ function registerResident(payload) {
       contact: payload.contact,
       address: payload.address,
       birthdate: payload.birthdate,
+      gender: payload.gender,
+      age: payload.age,
     },
   });
 
@@ -137,6 +139,8 @@ function registerResident(payload) {
     contact: payload.contact,
     address: payload.address,
     birthdate: payload.birthdate,
+    gender: payload.gender,
+    age: payload.age,
     barangayIdImage: payload.barangayIdImage,
     status: 'pending_validation',
     rejectionMessage: '',

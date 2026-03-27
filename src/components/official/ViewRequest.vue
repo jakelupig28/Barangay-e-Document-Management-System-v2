@@ -271,7 +271,6 @@ export default {
       captain: 'Hon. Barangay Captain'
     });
 
-    const auth = getAuth();
     const user = ref(null);
 
     const getDocumentTypeLabel = (typeValue) => {
@@ -407,16 +406,27 @@ export default {
       }
     };
 
+    const isFirebaseReady = () => !!(db && typeof db === 'object' && typeof db.app !== 'undefined');
+
     onMounted(() => {
-      onAuthStateChanged(auth, (currentUser) => {
-        user.value = currentUser;
-        if (currentUser) {
-          fetchRequest();
-        } else {
-          error.value = 'Please log in to view request details.';
-          isLoading.value = false;
-        }
-      });
+      if (!isFirebaseReady()) {
+        isLoading.value = false;
+        return;
+      }
+      try {
+        const auth = getAuth();
+        onAuthStateChanged(auth, (currentUser) => {
+          user.value = currentUser;
+          if (currentUser) {
+            fetchRequest();
+          } else {
+            error.value = 'Please log in to view request details.';
+            isLoading.value = false;
+          }
+        });
+      } catch (err) {
+        console.error("Auth init bypassed:", err);
+      }
     });
 
     return {

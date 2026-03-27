@@ -278,17 +278,27 @@ const showToastNotification = (msg, icon, isError = false) => {
 const viewPhoto = (url) => (selectedPhoto.value = url);
 const goBack = () => router.back();
 
+const isFirebaseReady = () => !!(db && typeof db === 'object' && typeof db.app !== 'undefined');
+
 onMounted(() => {
-  const auth = getAuth();
-  onAuthStateChanged(auth, (currentUser) => {
-    user.value = currentUser;
-    if (currentUser) {
-      fetchReport();
-    } else {
-      error.value = 'Please log in to view report details.';
-      isLoading.value = false;
-    }
-  });
+  if (!isFirebaseReady()) {
+    isLoading.value = false;
+    return;
+  }
+  try {
+    const auth = getAuth();
+    onAuthStateChanged(auth, (currentUser) => {
+      user.value = currentUser;
+      if (currentUser) {
+        fetchReport();
+      } else {
+        error.value = 'Please log in to view report details.';
+        isLoading.value = false;
+      }
+    });
+  } catch (err) {
+    console.error("Auth init bypassed:", err);
+  }
 });
 </script>
 

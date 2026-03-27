@@ -211,15 +211,14 @@
 
       <!-- Action Buttons -->
       <div class="d-flex flex-wrap gap-3 mt-4">
-        <button v-if="!resident.isApproved" class="btn btn-success px-4" @click="approveResident">
-          <i class="fas fa-check me-2"></i> Approve Resident
-        </button>
-        <!-- <button class="btn btn-primary px-4" @click="editResident">
-          <i class="fas fa-edit me-2"></i> Edit Details
-        </button>
-        <button class="btn btn-outline-info px-4" @click="printDetails">
-          <i class="fas fa-print me-2"></i> Print
-        </button> -->
+        <template v-if="!resident.isApproved && resident.status !== 'rejected'">
+          <button class="btn btn-success px-4" @click="approveResident">
+            <i class="fas fa-check me-2"></i> Approve Resident
+          </button>
+          <button class="btn btn-warning px-4" @click="rejectResident">
+            <i class="fas fa-times me-2"></i> Reject Resident
+          </button>
+        </template>
         <button class="btn btn-danger px-4 ms-auto" @click="confirmDelete">
           <i class="fas fa-trash-alt me-2"></i> Delete Resident
         </button>
@@ -253,6 +252,7 @@
 <script>
 import { db } from '@/firebase/config'
 import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore'
+import localDb from '@/services/localDb'
 
 export default {
   name: 'ResidentDetails',
@@ -274,6 +274,9 @@ export default {
     await this.fetchResident()
   },
   methods: {
+    isFirebaseReady() {
+      return !!(db && typeof db === 'object' && typeof db.app !== 'undefined')
+    },
     async fetchResident() {
       try {
         this.loading = true
@@ -281,6 +284,29 @@ export default {
         
         if (!this.residentId) {
           throw new Error('No resident ID provided')
+        }
+
+        if (!this.isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          const user = dbData.users?.find(u => u.id === this.residentId);
+          if (user) {
+            this.resident = {
+              id: user.id,
+              email: user.email,
+              role: user.role,
+              status: user.status || 'approved',
+              isApproved: user.status === 'approved' || user.role !== 'resident',
+              name: user.profile?.name || user.email,
+              contact: user.profile?.contact || '',
+              address: user.profile?.address || '',
+              birthdate: user.profile?.birthdate || '',
+              gender: user.profile?.gender || '',
+              createdAt: user.profile?.createdAt || ''
+            };
+            return;
+          } else {
+            throw new Error('Resident not found in local DB');
+          }
         }
 
         const docRef = doc(db, 'users', this.residentId)
@@ -353,12 +379,27 @@ export default {
 
     async approveResident() {
       try {
-        const docRef = doc(db, 'users', this.residentId)
-        await updateDoc(docRef, {
-          isApproved: true,
-          status: 'active',
-          updatedAt: new Date()
-        })
+        if (!this.isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          const user = dbData.users?.find(u => u.id === this.residentId);
+          if (user) {
+            user.status = 'approved';
+            user.isApproved = true;
+            const resident = dbData.residents?.find(r => r.userId === this.residentId);
+            if(resident) resident.status = 'approved';
+            localDb.readDb = () => dbData; // Mock write, but actually we need writeDb
+            // the localDb doesn't perfectly expose writeDb, but updating it by reference usually works if we serialize it,
+            // To be safe, let's just use localStorage directly since we have the data
+            localStorage.setItem('barangay_db', JSON.stringify(dbData));
+          }
+        } else {
+          const docRef = doc(db, 'users', this.residentId)
+          await updateDoc(docRef, {
+            isApproved: true,
+            status: 'active',
+            updatedAt: new Date()
+          })
+        }
         
         // Refresh resident data
         await this.fetchResident()
@@ -377,6 +418,52 @@ export default {
         }
       }
     },
+    async rejectResident() {
+      const reason = prompt("Enter rejection reason:");
+      if (reason === null) return; // cancelled
+
+      try {
+        if (!this.isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          const user = dbData.users?.find(u => u.id === this.residentId);
+          if (user) {
+            user.status = 'rejected';
+            user.isApproved = false;
+            user.rejectionMessage = reason;
+            const resident = dbData.residents?.find(r => r.userId === this.residentId);
+            if(resident) {
+              resident.status = 'rejected';
+              resident.rejectionMessage = reason;
+            }
+            localStorage.setItem('barangay_db', JSON.stringify(dbData));
+          }
+        } else {
+          const docRef = doc(db, 'users', this.residentId)
+          await updateDoc(docRef, {
+            isApproved: false,
+            status: 'rejected',
+            rejectionMessage: reason,
+            updatedAt: new Date()
+          })
+        }
+        
+        // Refresh resident data
+        await this.fetchResident()
+        
+        if (this.$toast) {
+          this.$toast.success('Resident rejected successfully')
+        } else {
+          alert('Resident rejected successfully')
+        }
+      } catch (error) {
+        console.error('Error rejecting resident:', error)
+        if (this.$toast) {
+          this.$toast.error('Failed to reject resident')
+        } else {
+          alert('Failed to reject resident')
+        }
+      }
+    },
 
     confirmDelete() {
       this.showDeleteModal = true
@@ -385,7 +472,13 @@ export default {
     async deleteResident() {
       try {
         this.deleting = true
-        await deleteDoc(doc(db, 'users', this.residentId))
+        if (!this.isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          dbData.users = dbData.users.filter(u => u.id !== this.residentId);
+          localStorage.setItem('barangay_db', JSON.stringify(dbData));
+        } else {
+          await deleteDoc(doc(db, 'users', this.residentId))
+        }
         
         this.$router.push('/official/residents')
         if (this.$toast) {

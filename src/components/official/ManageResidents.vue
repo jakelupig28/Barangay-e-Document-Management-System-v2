@@ -49,9 +49,17 @@
             <td class="py-3">{{ resident.contact }}</td>
             <td class="py-3">{{ formatDate(resident.createdAt) }}</td>
             <td class="py-3 pe-4">
-              <button class="btn btn-sm btn-light rounded-pill px-3" @click="viewResident(resident.id)">
-                <i class="fas fa-eye me-1"></i> View Details
-              </button>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button class="btn btn-sm btn-light rounded-pill px-3" @click="viewResident(resident.id)">
+                  <i class="fas fa-eye me-1"></i> View Details
+                </button>
+                <button v-if="!resident.isApproved && resident.status !== 'rejected'" class="btn btn-sm btn-success rounded-pill px-3" @click="approveResident(resident.id)">
+                  <i class="fas fa-check me-1"></i> Approve
+                </button>
+                <button v-if="!resident.isApproved && resident.status !== 'rejected'" class="btn btn-sm btn-warning rounded-pill px-3 text-white" @click="rejectResident(resident.id)">
+                  <i class="fas fa-times me-1"></i> Reject
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -86,7 +94,8 @@
 
 <script>
 import { db } from '@/firebase/config'
-import { collection, getDocs, query, where } from 'firebase/firestore'
+import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore'
+import localDb from '@/services/localDb'
 
 export default {
   data() {
@@ -122,18 +131,35 @@ export default {
   async created() {
     await this.fetchResidents()
   },
-  methods: {
+    methods: {
+    isFirebaseReady() {
+      return !!(db && typeof db === 'object' && typeof db.app !== 'undefined')
+    },
     async fetchResidents() {
-      const q = query(collection(db, 'users'), where('role', '==', 'resident'))
-      const snapshot = await getDocs(q)
+      if (!this.isFirebaseReady()) {
+        const localData = localDb.readDb();
+        this.allResidents = localData.users ? localData.users.filter(u => u.role === 'resident') : [];
+        this.residents = [...this.allResidents];
+        this.currentPage = 1;
+        return;
+      }
+      
+      try {
+        const q = query(collection(db, 'users'), where('role', '==', 'resident'))
+        const snapshot = await getDocs(q)
 
-      this.allResidents = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+        this.allResidents = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
 
-      this.residents = [...this.allResidents]
-      this.currentPage = 1
+        this.residents = [...this.allResidents]
+        this.currentPage = 1
+      } catch (err) {
+        console.error('Error fetching residents:', err)
+        this.allResidents = []
+        this.residents = []
+      }
     },
 
     async searchResidents() {
@@ -149,6 +175,88 @@ export default {
 
     viewResident(id) {
       this.$router.push(`/official/resident/${id}`)
+    },
+
+    async approveResident(id) {
+      try {
+        if (!this.isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          const user = dbData.users?.find(u => u.id === id);
+          if (user) {
+            user.status = 'approved';
+            user.isApproved = true;
+            const resident = dbData.residents?.find(r => r.userId === id);
+            if (resident) resident.status = 'approved';
+            localStorage.setItem('barangay_db', JSON.stringify(dbData));
+          }
+        } else {
+          const docRef = doc(db, 'users', id);
+          await updateDoc(docRef, {
+            isApproved: true,
+            status: 'active',
+            updatedAt: new Date()
+          });
+        }
+        
+        await this.fetchResidents();
+        if (this.$toast) {
+          this.$toast.success('Resident approved successfully');
+        } else {
+          alert('Resident approved successfully');
+        }
+      } catch (err) {
+        console.error('Error approving resident:', err);
+        if (this.$toast) {
+          this.$toast.error('Failed to approve resident');
+        } else {
+          alert('Failed to approve resident');
+        }
+      }
+    },
+
+    async rejectResident(id) {
+      const reason = prompt("Enter rejection reason:");
+      if (reason === null) return;
+
+      try {
+        if (!this.isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          const user = dbData.users?.find(u => u.id === id);
+          if (user) {
+            user.status = 'rejected';
+            user.isApproved = false;
+            user.rejectionMessage = reason;
+            const resident = dbData.residents?.find(r => r.userId === id);
+            if (resident) {
+              resident.status = 'rejected';
+              resident.rejectionMessage = reason;
+            }
+            localStorage.setItem('barangay_db', JSON.stringify(dbData));
+          }
+        } else {
+          const docRef = doc(db, 'users', id);
+          await updateDoc(docRef, {
+            isApproved: false,
+            status: 'rejected',
+            rejectionMessage: reason,
+            updatedAt: new Date()
+          });
+        }
+        
+        await this.fetchResidents();
+        if (this.$toast) {
+          this.$toast.success('Resident rejected successfully');
+        } else {
+          alert('Resident rejected successfully');
+        }
+      } catch (err) {
+        console.error('Error rejecting resident:', err);
+        if (this.$toast) {
+          this.$toast.error('Failed to reject resident');
+        } else {
+          alert('Failed to reject resident');
+        }
+      }
     },
 
     nextPage() {

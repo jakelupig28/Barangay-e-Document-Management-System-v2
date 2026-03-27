@@ -360,7 +360,6 @@ export default {
     });
 
     let unsubscribe = null;
-    const auth = getAuth();
     const user = ref(null);
 
     const getDocumentTypeLabel = (typeValue) => {
@@ -385,7 +384,10 @@ export default {
       }
     };
 
+    const isFirebaseReady = () => !!(db && typeof db === 'object' && typeof db.app !== 'undefined');
+
     const fetchAllUsers = async () => {
+      if (!isFirebaseReady()) return;
       try {
         const q = query(collection(db, 'users'));
         const querySnapshot = await getDocs(q);
@@ -398,6 +400,10 @@ export default {
     };
 
     const fetchRequests = async () => {
+      if (!isFirebaseReady()) {
+        isLoading.value = false;
+        return;
+      }
       try {
         isLoading.value = true;
         error.value = null;
@@ -582,15 +588,24 @@ export default {
     };
 
     onMounted(() => {
-      onAuthStateChanged(auth, (currentUser) => {
-        if (currentUser) {
-          user.value = currentUser;
-          fetchRequests();
-        } else {
-          error.value = 'Please log in to access document requests.';
-          isLoading.value = false;
-        }
-      });
+      if (!isFirebaseReady()) {
+        isLoading.value = false;
+        return;
+      }
+      try {
+        const auth = getAuth();
+        onAuthStateChanged(auth, (currentUser) => {
+          if (currentUser) {
+            user.value = currentUser;
+            fetchRequests();
+          } else {
+            error.value = 'Please log in to access document requests.';
+            isLoading.value = false;
+          }
+        });
+      } catch (err) {
+        console.error("Auth init bypassed");
+      }
     });
 
     onUnmounted(() => {

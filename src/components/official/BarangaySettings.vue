@@ -232,8 +232,7 @@ export default {
     const originalSettings = ref({});
     const message = ref("");
     const isSaving = ref(false);
-
-    const settingsRef = doc(db, "config", "barangaySettings");
+    const getSettingsRef = () => doc(db, "config", "barangaySettings");
 
     const messageType = computed(() => {
       return message.value.includes("❌") ? "error" : "success";
@@ -243,9 +242,16 @@ export default {
       return messageType.value === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle";
     });
 
+    const isFirebaseReady = () => !!(db && typeof db === 'object' && typeof db.app !== 'undefined');
+
     const fetchSettings = async () => {
+      if (!isFirebaseReady()) {
+        message.value = "Local mode: default settings loaded.";
+        setTimeout(() => message.value = "", 3000);
+        return;
+      }
       try {
-        const snap = await getDoc(settingsRef);
+        const snap = await getDoc(getSettingsRef());
         if (snap.exists()) {
           const data = snap.data();
           barangayInfo.value = {
@@ -261,9 +267,14 @@ export default {
     };
 
     const saveSettings = async () => {
+      if (!isFirebaseReady()) {
+        message.value = "❌ Cannot save settings in local mode.";
+        setTimeout(() => message.value = "", 3500);
+        return;
+      }
       isSaving.value = true;
       try {
-        await setDoc(settingsRef, {
+        await setDoc(getSettingsRef(), {
           ...barangayInfo.value,
           updatedAt: new Date().toISOString(),
         });

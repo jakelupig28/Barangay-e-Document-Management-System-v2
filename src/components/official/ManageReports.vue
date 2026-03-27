@@ -232,7 +232,6 @@ export default {
     };
 
     let unsubscribe = null;
-    const auth = getAuth();
     const user = ref(null);
 
     const getReportTypeLabel = (typeValue) => {
@@ -245,7 +244,13 @@ export default {
       return level ? level.label : urgencyValue;
     };
 
+    const isFirebaseReady = () => !!(db && typeof db === 'object' && typeof db.app !== 'undefined');
+
     const fetchReports = async () => {
+      if (!isFirebaseReady()) {
+        isLoading.value = false;
+        return;
+      }
       try {
         isLoading.value = true;
         error.value = null;
@@ -343,15 +348,24 @@ export default {
     };
 
     onMounted(() => {
-      onAuthStateChanged(auth, (currentUser) => {
-        if (currentUser) {
-          user.value = currentUser;
-          fetchReports();
-        } else {
-          error.value = 'Please log in to access reports management.';
-          isLoading.value = false;
-        }
-      });
+      if (!isFirebaseReady()) {
+        isLoading.value = false;
+        return;
+      }
+      try {
+        const auth = getAuth();
+        onAuthStateChanged(auth, (currentUser) => {
+          if (currentUser) {
+            user.value = currentUser;
+            fetchReports();
+          } else {
+            error.value = 'Please log in to access reports management.';
+            isLoading.value = false;
+          }
+        });
+      } catch (err) {
+        console.error("Auth init bypassed.");
+      }
     });
 
     onUnmounted(() => {

@@ -1,76 +1,145 @@
 <template>
-  <div class="register-page">
-    <section class="hero-section py-4">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-lg-5 text-white mb-4 mb-lg-0">
-            <h1 class="fw-bold mb-3">Resident Registration</h1>
-            <p class="mb-4 hero-copy">Complete your details to create a resident account for barangay e-services.</p>
-            <router-link to="/" class="btn btn-outline-light">Back to Home</router-link>
+  <div class="auth-wrapper">
+    <div class="auth-container">
+      <!-- Left Side: Branding -->
+      <div class="auth-left">
+        <div class="brand-showcase">
+          <div class="logo-wrapper">
+             <i class="fas fa-id-card"></i>
           </div>
-          <div class="col-lg-7">
-            <div class="card shadow-lg border-0">
-              <div class="card-body p-4">
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label field-label">Full Name</label>
-                    <input v-model.trim="form.name" class="form-control" type="text" />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label field-label">Email</label>
-                    <input v-model.trim="form.email" class="form-control" type="email" />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label field-label">Password</label>
-                    <div class="input-group">
-                      <input v-model="form.password" class="form-control" :type="showPassword ? 'text' : 'password'" />
-                      <button class="btn btn-outline-secondary" type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                        <i :class="showPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label field-label">Confirm Password</label>
-                    <div class="input-group">
-                      <input v-model="form.confirmPassword" class="form-control" :type="showConfirmPassword ? 'text' : 'password'" />
-                      <button class="btn btn-outline-secondary" type="button" @click="showConfirmPassword = !showConfirmPassword" :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'">
-                        <i :class="showConfirmPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label field-label">Birthdate</label>
-                    <input v-model="form.birthdate" class="form-control" type="date" />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label field-label">Contact Number</label>
-                    <input v-model.trim="form.contact" class="form-control" type="text" />
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label field-label">Address</label>
-                    <input v-model.trim="form.address" class="form-control" type="text" />
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label field-label">Present Barangay ID (image only)</label>
-                    <input class="form-control" type="file" accept="image/*" @change="handleFileChange" />
-                  </div>
-                </div>
+          <h1 class="brand-title">Resident Registration</h1>
+          <p class="hero-text">Become an official digital resident of our barangay. Complete your profile to access all exclusive e-services.</p>
+          <div class="features mt-4">
+            <div class="feature-item"><i class="fas fa-lock"></i> GDPR Data Privacy</div>
+            <div class="feature-item"><i class="fas fa-clock"></i> Quick Verification</div>
+            <div class="feature-item"><i class="fas fa-hands-helping"></i> Community Support</div>
+          </div>
+        </div>
+        <div class="auth-left-bg"></div>
+      </div>
 
-                <p v-if="error" class="text-danger small mt-3">{{ error }}</p>
-                <p v-if="success" class="text-success small mt-3">{{ success }}</p>
+      <!-- Right Side: Form -->
+      <div class="auth-right">
+        <router-link to="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</router-link>
+        
+        <div class="auth-card">
+          <div class="auth-header text-center mb-4">
+            <h2>Create Account</h2>
+            <p class="text-muted">Enter your details and upload ID to verify your residency</p>
+          </div>
 
-                <div class="d-flex gap-2 mt-3">
-                  <button class="btn btn-primary" :disabled="loading" @click="registerResident">
-                    {{ loading ? 'Submitting...' : 'Submit Registration' }}
-                  </button>
-                  <router-link to="/login" class="btn btn-outline-primary">Go to Login</router-link>
+          <form @submit.prevent="registerResident" class="auth-form">
+            <div class="form-grid">
+              
+              <!-- Full Name -->
+              <div class="form-group floating-group full-width">
+                <input v-model.trim="form.name" type="text" class="modern-input" id="nameInput" placeholder=" " required />
+                <label for="nameInput" class="floating-label">Full Name</label>
+                <i class="fas fa-user input-icon"></i>
+              </div>
+
+              <!-- Email -->
+              <div class="form-group floating-group">
+                <input v-model.trim="form.email" type="email" class="modern-input" id="emailInput" placeholder=" " required />
+                <label for="emailInput" class="floating-label">Email Address</label>
+                <i class="fas fa-envelope input-icon"></i>
+              </div>
+
+              <!-- Contact Number -->
+              <div class="form-group floating-group">
+                <input v-model.trim="form.contact" type="text" class="modern-input" id="contactInput" placeholder=" " required />
+                <label for="contactInput" class="floating-label">Contact Number</label>
+                <i class="fas fa-phone input-icon"></i>
+              </div>
+
+              <!-- Password -->
+              <div class="form-group floating-group pr-0">
+                <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="modern-input password-input" id="passwordInput" placeholder=" " required />
+                <label for="passwordInput" class="floating-label">Password</label>
+                <i class="fas fa-lock input-icon"></i>
+                <button class="toggle-password" type="button" @click="showPassword = !showPassword" aria-label="Toggle password visibility">
+                  <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                </button>
+              </div>
+
+              <!-- Confirm Password -->
+              <div class="form-group floating-group pr-0">
+                <input v-model="form.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" class="modern-input password-input" id="confirmPasswordInput" placeholder=" " required />
+                <label for="confirmPasswordInput" class="floating-label">Confirm Password</label>
+                <i class="fas fa-lock input-icon"></i>
+                <button class="toggle-password" type="button" @click="showConfirmPassword = !showConfirmPassword" aria-label="Toggle confirm password">
+                  <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                </button>
+              </div>
+
+              <!-- Birthdate -->
+              <div class="form-group floating-group date-group">
+                <input v-model="form.birthdate" type="date" class="modern-input has-value" id="birthdateInput" required />
+                <label for="birthdateInput" class="floating-label fixed-label">Birthdate</label>
+                <i class="fas fa-calendar-day input-icon"></i>
+              </div>
+
+              <!-- Age (Auto Computed) -->
+              <div class="form-group floating-group">
+                <input v-model="computedAge" type="text" class="modern-input has-value" id="ageInput" readonly placeholder=" " />
+                <label for="ageInput" class="floating-label fixed-label">Age</label>
+                <i class="fas fa-child input-icon"></i>
+              </div>
+
+              <!-- Gender -->
+              <div class="form-group floating-group full-width">
+                <select v-model="form.gender" class="modern-input has-value" id="genderInput" required>
+                  <option value="" disabled>Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                <label for="genderInput" class="floating-label fixed-label">Gender</label>
+                <i class="fas fa-venus-mars input-icon"></i>
+              </div>
+
+              <!-- Complete Address -->
+              <div class="form-group floating-group full-width">
+                <input v-model.trim="form.address" type="text" class="modern-input" id="addressInput" placeholder=" " required />
+                <label for="addressInput" class="floating-label">Complete Address</label>
+                <i class="fas fa-home input-icon"></i>
+              </div>
+
+              <!-- File Upload -->
+              <div class="form-group full-width upload-group">
+                <label class="upload-label text-muted"><i class="fas fa-id-card pb-1 mr-1"></i> Upload Valid Barangay ID (Image)</label>
+                <div class="file-drop-area">
+                  <input class="file-input" type="file" accept="image/*" @change="handleFileChange" id="fileUpload" required />
+                  <span class="file-message">
+                    <span v-if="barangayIdImage" class="text-success fw-bold"><i class="fas fa-check-circle"></i> Image Selected</span>
+                    <span v-else>Drag & Drop or Click to Browse</span>
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
+
+            <div v-if="error" class="error-alert mt-2">
+              <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            
+            <div v-if="success" class="success-alert mt-2">
+              <i class="fas fa-check-circle"></i> {{ success }}
+            </div>
+
+            <button type="submit" class="submit-btn mt-4" :disabled="loading" :class="{ 'loading': loading }">
+              <span v-if="loading" class="spinner"><i class="fas fa-circle-notch fa-spin"></i></span>
+              <span v-else>Submit Registration <i class="fas fa-arrow-right ml-2"></i></span>
+            </button>
+            
+            <div class="text-center mt-4">
+              <p class="text-muted mb-0">Already an official resident?</p>
+              <router-link to="/login" class="login-link">Sign In Here</router-link>
+            </div>
+          </form>
+
         </div>
       </div>
-    </section>
+    </div>
   </div>
 </template>
 
@@ -87,6 +156,7 @@ export default {
         password: '',
         confirmPassword: '',
         birthdate: '',
+        gender: '',
         contact: '',
         address: '',
       },
@@ -97,6 +167,19 @@ export default {
       error: '',
       success: '',
     };
+  },
+  computed: {
+    computedAge() {
+      if (!this.form.birthdate) return '';
+      const birth = new Date(this.form.birthdate);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      return age >= 0 ? age : 0;
+    }
   },
   methods: {
     handleFileChange(event) {
@@ -111,6 +194,7 @@ export default {
         this.barangayIdImage = '';
         return;
       }
+      this.error = '';
       const reader = new FileReader();
       reader.onload = () => {
         this.barangayIdImage = reader.result;
@@ -128,6 +212,7 @@ export default {
 
         localDb.registerResident({
           ...this.form,
+          age: this.computedAge,
           barangayIdImage: this.barangayIdImage,
         });
 
@@ -145,23 +230,364 @@ export default {
 </script>
 
 <style scoped>
-.register-page {
+/* Full Page Wrapper */
+.auth-wrapper {
   min-height: 100vh;
-}
-.hero-section {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1a3a8f 0%, #0d6efd 100%);
   display: flex;
   align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 2rem;
 }
-.field-label {
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
+
+/* Container Split */
+.auth-container {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  overflow: hidden;
+  min-height: 700px;
+}
+
+/* Left Panel - Branding */
+.auth-left {
+  flex: 1;
+  max-width: 450px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  color: white;
+  padding: 4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-left-bg {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background-image: radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.logo-wrapper {
+  width: 60px;
+  height: 60px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -1px;
+}
+
+.hero-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+.feature-item i {
+  color: #93c5fd;
+}
+
+/* Right Panel - Form */
+.auth-right {
+  flex: 2;
+  padding: 3rem 4rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: #ffffff;
+  overflow-y: auto;
+  max-height: 90vh; /* Scrolable if window is small */
+}
+
+/* Scrollbar hiding for right panel if needed */
+.auth-right::-webkit-scrollbar {
+  width: 6px;
+}
+.auth-right::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 10px;
+}
+
+.back-link {
+  position: absolute;
+  top: 2rem;
+  left: 2.5rem;
+  color: #6b7280;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: #1e3a8a;
+}
+
+.auth-card {
+  max-width: 600px;
+  margin: auto;
+  width: 100%;
+  padding-top: 1rem;
+}
+
+.auth-header h2 {
+  font-size: 2rem;
   font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+/* Form Layout Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Floating Input Group */
+.form-group.floating-group {
+  position: relative;
+}
+
+.modern-input {
+  width: 100%;
+  padding: 1.25rem 1rem 0.5rem 3rem;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #fdfdfd;
+  color: #111827;
+  transition: all 0.2s;
+}
+
+.modern-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #ffffff;
+}
+
+.floating-label {
+  position: absolute;
+  left: 3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.95rem;
+  color: #6b7280;
+  pointer-events: none;
+  transition: 0.2s ease all;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 1.1rem;
+  transition: color 0.2s;
+}
+
+.modern-input:focus ~ .input-icon {
+  color: #3b82f6;
+}
+
+.modern-input:focus ~ .floating-label,
+.modern-input:not(:placeholder-shown) ~ .floating-label,
+.fixed-label {
+  top: 0.5rem;
+  transform: translateY(0);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+/* Date Input Special Handling */
+.date-group {
+  position: relative;
+}
+.date-group .has-value {
+  padding-top: 1.6rem;
+  padding-bottom: 0.15rem;
+}
+
+/* Password Toggle */
+.toggle-password {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+.toggle-password:hover {
   color: #4b5563;
 }
-.hero-copy {
-  max-width: 420px;
+
+/* File Upload modern style */
+.upload-group {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.5rem;
+}
+.upload-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.file-drop-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background-color: #f8fafc;
+  transition: 0.2s ease;
+  cursor: pointer;
+}
+.file-drop-area:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+.file-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+  opacity: 0;
+}
+.file-message {
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* Buttons and Interactions */
+.submit-btn {
+  width: 100%;
+  padding: 0.85rem;
+  background: linear-gradient(to right, #2563eb, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+.submit-btn.loading {
+  opacity: 0.8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-link {
+  color: #3b82f6;
+  font-weight: 600;
+  text-decoration: none;
+}
+.login-link:hover {
+  text-decoration: underline;
+}
+
+/* Error/Success Alert */
+.error-alert {
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #f87171;
+  animation: shake 0.4s ease-in-out;
+}
+
+.success-alert {
+  background: #ecfdf5;
+  color: #047857;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #34d399;
+}
+
+/* Animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@media (max-width: 900px) {
+  .auth-left { display: none; }
+  .auth-right { padding: 3rem 1.5rem; }
+  .auth-container { max-width: 500px; min-height: auto; }
+  .form-grid { grid-template-columns: 1fr; }
 }
 </style>

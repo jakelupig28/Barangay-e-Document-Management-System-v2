@@ -1,65 +1,68 @@
 <template>
-  <div class="admin-dashboard">
+  <div class="admin-dashboard app-container">
     <!-- Sidebar -->
-    <aside :class="['sidebar', { 'sidebar-open': sidebarOpen }]">
+    <aside class="sidebar" :class="{ 'collapsed': isCollapsed }">
       <div class="sidebar-header">
-        <h3>Admin Portal</h3>
-        <div class="user-profile">
-          <div class="avatar">
-            <span>{{ userInitials }}</span>
-          </div>
-          <div class="user-info">
-            <strong>{{ user.name }}</strong>
-            <small>{{ formatRole(user.role) }}</small>
+        <div class="sidebar-brand text-white text-decoration-none d-block">
+          <div class="brand-content d-flex align-items-center gap-2">
+            <div class="brand-logo">
+              <i class="fas fa-shield-alt text-white fs-4"></i>
+            </div>
+            <span class="brand-text" v-show="!isCollapsed">Admin Portal</span>
           </div>
         </div>
+        <button 
+          class="sidebar-toggle" 
+          @click="isCollapsed = !isCollapsed"
+        >
+          <i :class="isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'"></i>
+        </button>
       </div>
+
       <nav class="sidebar-nav">
-        <div class="nav-section">
-          <h4>Management</h4>
-          <ul>
-            <li :class="{ active: activeSection === 'users' }">
-              <a @click="activeSection = 'users'; sidebarOpen = false">
-                <i class="fas fa-users"></i> <span>User Management</span>
-              </a>
-            </li>
-            <li :class="{ active: activeSection === 'transactions' }">
-              <a @click="activeSection = 'transactions'; sidebarOpen = false">
-                <i class="fas fa-exchange-alt"></i> <span>Transactions</span>
-              </a>
-            </li>
-            <li :class="{ active: activeSection === 'announcements' }">
-              <a @click="activeSection = 'announcements'; sidebarOpen = false">
-                <i class="fas fa-bullhorn"></i> <span>Announcements</span>
-              </a>
-            </li>
-          </ul>
-          <br>
-        </div>
-        <div class="nav-section">
-          <h4>System</h4>
-          <ul>
-            <li :class="{ active: activeSection === 'system' }">
-              <a @click="activeSection = 'system'; sidebarOpen = false">
-                <i class="fas fa-cog"></i> <span>System Settings</span>
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div class="nav-section logout-section">
-          <ul>
-            <li>
-              <a @click="logout">
-                <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
-              </a>
-            </li>
-          </ul>
-        </div>
+        <ul class="nav-list">
+          <!-- User Management -->
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeSection === 'users' }" @click="activeSection = 'users'; sidebarOpen = false">
+              <i class="nav-icon fas fa-users"></i>
+              <span class="nav-text">User Management</span>
+            </a>
+          </li>
+          <!-- Transactions -->
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeSection === 'transactions' }" @click="activeSection = 'transactions'; sidebarOpen = false">
+              <i class="nav-icon fas fa-exchange-alt"></i>
+              <span class="nav-text">Transactions</span>
+            </a>
+          </li>
+          <!-- Announcements -->
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeSection === 'announcements' }" @click="activeSection = 'announcements'; sidebarOpen = false">
+              <i class="nav-icon fas fa-bullhorn"></i>
+              <span class="nav-text">Announcements</span>
+            </a>
+          </li>
+          <!-- System Settings -->
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeSection === 'system' }" @click="activeSection = 'system'; sidebarOpen = false">
+              <i class="nav-icon fas fa-cog"></i>
+              <span class="nav-text">System Settings</span>
+            </a>
+          </li>
+        </ul>
       </nav>
+
+      <div class="sidebar-footer">
+        <button class="logout-btn" @click="logout">
+          <i class="logout-icon fas fa-sign-out-alt"></i>
+          <span class="logout-text" v-show="!isCollapsed">Logout</span>
+        </button>
+      </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="main-content">
+    <main class="main-content" :class="{ 'expanded': isCollapsed }">
+      <div class="content-wrapper">
       <header class="content-header">
         <h1>{{ sectionTitle }}</h1>
         <div class="header-actions">
@@ -98,6 +101,9 @@
                   <option value="pending">Pending</option>
                 </select>
               </div>
+              <button class="btn btn-primary ml-2" @click="showCreateStaffModal = true">
+                <i class="fas fa-user-plus"></i> Add Staff Account
+              </button>
               <button v-if="selectedUsers.length" class="btn btn-approve" @click="bulkApproveUsers">
                 Approve Selected
               </button>
@@ -351,6 +357,14 @@
         @close="closeConfirmModal"
         @confirm="executeDelete"
       />
+      <StaffAccountModal
+        :isVisible="showCreateStaffModal"
+        :loading="creatingStaff"
+        :error="createStaffError"
+        @close="showCreateStaffModal = false"
+        @save="handleCreateStaff"
+      />
+      </div>
     </main>
   </div>
 </template>
@@ -374,12 +388,15 @@ import { signOut } from 'firebase/auth'
 import * as XLSX from 'xlsx'
 import AnnouncementModal from './AnnouncementModal.vue'
 import ConfirmationModal from './ConfirmationModal.vue'
+import StaffAccountModal from './StaffAccountModal.vue'
+import localDb from '@/services/localDb'
 
 export default {
   name: 'AdminDashboard',
   components: {
     AnnouncementModal,
-    ConfirmationModal
+    ConfirmationModal,
+    StaffAccountModal
   },
   data() {
     return {
@@ -415,7 +432,11 @@ export default {
         role: ''
       },
       sidebarOpen: false,
+      isCollapsed: false,
       showConfirmModal: false,
+      showCreateStaffModal: false,
+      creatingStaff: false,
+      createStaffError: '',
       confirmMessage: '',
       deleteAction: null,
       maintenanceEnabled: false,
@@ -513,6 +534,30 @@ export default {
       this.loadingUsers = true
       this.userError = null
       try {
+        if (!this.isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          let users = dbData.users || [];
+          if (this.roleFilter) {
+            users = users.filter((u) => u.role === this.roleFilter);
+          }
+          if (this.statusFilter) {
+            users = users.filter((u) => u.status === this.statusFilter);
+          }
+          // Combine basic info and profile for table compatibility
+          this.allUsers = users.map(u => ({
+            id: u.id,
+            email: u.email,
+            role: u.role,
+            status: u.status || 'approved',
+            isApproved: u.status === 'approved' || u.role !== 'resident',
+            name: u.profile?.name || u.email,
+            contact: u.profile?.contact || '',
+            address: u.profile?.address || '',
+            birthdate: u.profile?.birthdate || '',
+          }));
+          return;
+        }
+
         let q = query(collection(db, 'users'))
         if (this.roleFilter) {
           q = query(q, where('role', '==', this.roleFilter))
@@ -534,10 +579,57 @@ export default {
         this.loadingUsers = false
       }
     },
+    isFirebaseReady() {
+      return !!(db && typeof db === 'object' && typeof db.app !== 'undefined')
+    },
+    async handleCreateStaff(staffData) {
+      this.creatingStaff = true
+      this.createStaffError = ''
+      try {
+        if (!this.isFirebaseReady()) {
+          // Local offline mode
+          localDb.createBarangayStaff({
+            email: staffData.email,
+            defaultPassword: staffData.password,
+            createdBy: this.user.name
+          })
+          this.$notify.success('Staff account created successfully (Local Mode)')
+        } else {
+          // Firebase mode: Use secondary app logic if needed, or just warn
+          // For now, write to users collection without calling Firebase Auth (assuming functions or manual creation is used for auth) 
+          // (Since we are securely modifying just the DB in local-json mode)
+          // Note: In real production, this would use a Firebase Cloud Function to create a user safely.
+          const docRef = await addDoc(collection(db, 'users'), {
+            name: staffData.name,
+            email: staffData.email,
+            contact: staffData.contact,
+            role: 'barangay_staff',
+            isApproved: true,
+            status: 'approved',
+            createdAt: new Date().toISOString()
+          })
+          this.$notify.success('Staff document created in Firebase')
+        }
+        this.showCreateStaffModal = false
+        this.fetchAllUsers()
+      } catch (err) {
+        console.error('Error creating staff:', err)
+        this.createStaffError = err.message || 'Failed to create staff account'
+        this.$notify.error(this.createStaffError)
+      } finally {
+        this.creatingStaff = false
+      }
+    },
     async fetchTransactions() {
       this.loadingTransactions = true
       this.transactionError = null
       try {
+        if (!this.isFirebaseReady()) {
+          this.transactions = [];
+          this.totalTransactions = 0;
+          return;
+        }
+
         let q = query(collection(db, 'requests'), orderBy('createdAt', 'desc'))
         const snapshot = await getDocs(q)
         const transactionsData = []
@@ -570,6 +662,11 @@ export default {
       this.loadingAnnouncements = true
       this.announcementError = null
       try {
+        if (!this.isFirebaseReady()) {
+          this.announcements = [];
+          return;
+        }
+
         const q = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'))
         const snapshot = await getDocs(q)
         this.announcements = []
@@ -631,6 +728,10 @@ export default {
       }
     },
     async bulkApproveUsers() {
+      if (!this.isFirebaseReady()) {
+        this.$notify.error('Cannot approve users in local mode')
+        return
+      }
       this.confirmMessage = `Are you sure you want to approve ${this.selectedUsers.length} users?`
       this.deleteAction = async () => {
         try {
@@ -655,6 +756,10 @@ export default {
       this.showConfirmModal = true
     },
     async bulkDeleteUsers() {
+      if (!this.isFirebaseReady()) {
+        this.$notify.error('Cannot delete users in local mode')
+        return
+      }
       this.confirmMessage = `Are you sure you want to delete ${this.selectedUsers.length} users?`
       this.deleteAction = async () => {
         try {
@@ -672,6 +777,10 @@ export default {
       this.showConfirmModal = true
     },
     async approveUser(user) {
+      if (!this.isFirebaseReady()) {
+        this.$notify.error('Cannot approve user in local mode')
+        return
+      }
       try {
         const userRef = doc(db, 'users', user.id)
         const updateData = {
@@ -700,6 +809,10 @@ export default {
       this.showConfirmModal = true
     },
     async deleteUser(userId) {
+      if (!this.isFirebaseReady()) {
+        this.$notify.error('Cannot delete user in local mode')
+        return
+      }
       try {
         await deleteDoc(doc(db, 'users', userId))
         this.fetchAllUsers()
@@ -710,6 +823,10 @@ export default {
       }
     },
     async deleteAnnouncement(id) {
+      if (!this.isFirebaseReady()) {
+        this.$notify.error('Cannot delete announcement in local mode')
+        return
+      }
       try {
         await deleteDoc(doc(db, 'announcements', id))
         this.fetchAnnouncements()
@@ -743,6 +860,10 @@ export default {
       this.showAnnouncementModal = true
     },
     async saveAnnouncement(announcement, editingAnnouncement) {
+      if (!this.isFirebaseReady()) {
+        this.$notify.error('Cannot save announcements in local mode')
+        return
+      }
       try {
         if (editingAnnouncement) {
           const announcementRef = doc(db, 'announcements', editingAnnouncement.id)
@@ -861,6 +982,7 @@ export default {
       }
     },
     async loadMaintenanceSettings() {
+      if (!this.isFirebaseReady()) return
       try {
         const docRef = doc(db, 'system', 'maintenance')
         const docSnap = await getDoc(docRef)
@@ -877,6 +999,10 @@ export default {
       }
     },
     async saveMaintenanceSettings() {
+      if (!this.isFirebaseReady()) {
+        this.$notify.error('Cannot save settings in local mode')
+        return
+      }
       try {
         const docRef = doc(db, 'system', 'maintenance')
         await setDoc(docRef, {
@@ -990,142 +1116,225 @@ export default {
 .admin-dashboard {
   display: flex;
   min-height: 100vh;
-  background: #f8fafc;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #1e293b;
+  background-color: #f8f9fa;
 }
 
 /* Sidebar Styles */
 .sidebar {
-  width: 280px;
-  background: #ffffff;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  border-right: 1px solid #e2e8f0;
+  width: 260px;
+  background: linear-gradient(135deg, #1e3a8a, #1e40af);
+  color: white;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  position: fixed;
+  height: 100vh;
+}
+
+.sidebar.collapsed {
+  width: 70px;
 }
 
 .sidebar-header {
-  padding-bottom: 24px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 1.5rem 1rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
-.sidebar-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
+.sidebar-brand {
+  color: white;
+  text-decoration: none;
+  display: block;
 }
 
-.user-profile {
+.brand-content {
   display: flex;
   align-items: center;
-  margin-top: 20px;
+  gap: 0.75rem;
 }
 
-.avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #2563eb;
-  color: white;
+.brand-logo {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  font-weight: 600;
-  margin-right: 12px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
-.user-info strong {
-  font-size: 0.95rem;
-  color: #1e293b;
+.brand-text {
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
 }
 
-.user-info small {
-  display: block;
-  font-size: 0.75rem;
-  color: #64748b;
-  margin-top: 2px;
+.sidebar.collapsed .brand-text {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #1e3a8a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #1e3a8a;
+  font-size: 0.7rem;
+  font-weight: bold;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1001;
+}
+
+.sidebar-toggle:hover {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: #f8f9fa;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 24px 0;
+  padding: 1.5rem 0;
+  overflow: hidden;
 }
 
-.nav-section h4 {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 0 12px;
-  margin-bottom: 12px;
-}
-
-.sidebar-nav ul {
+.nav-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
-.sidebar-nav li a {
+.nav-item {
+  margin-bottom: 0.25rem;
+}
+
+.nav-link {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  color: #475569;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  margin: 0 0.5rem;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.nav-link.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  border-left-color: white;
+  font-weight: 600;
+}
+
+.nav-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.nav-text {
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.collapsed .nav-text {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
   border-radius: 8px;
-  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.sidebar-nav li a:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-}
-
-.sidebar-nav li.active a {
-  background: #2563eb;
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
   color: white;
-  font-weight: 500;
 }
 
-.sidebar-nav li a i {
-  margin-right: 12px;
+.logout-icon {
   width: 20px;
   text-align: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
-.logout-section {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
+.logout-text {
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
 }
 
-.logout-section li a {
-  color: #dc2626;
-}
-
-.logout-section li a:hover {
-  background: #fef2f2;
+.sidebar.collapsed .logout-text {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
 }
 
 /* Main Content Styles */
 .main-content {
   flex: 1;
-  padding: 32px;
-  overflow-y: auto;
+  transition: all 0.3s ease;
+  overflow-x: auto;
+  margin-left: 260px;
+}
+
+.main-content.expanded {
+  margin-left: 70px;
+}
+
+.content-wrapper {
+  padding: 2rem;
+  min-height: 100%;
 }
 
 .content-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 2rem;
 }
 
 .content-header h1 {
