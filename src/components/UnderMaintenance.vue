@@ -71,8 +71,6 @@
 </template>
 
 <script>
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/config';
 
 export default {
   name: "UnderMaintenance",
@@ -97,17 +95,7 @@ export default {
       }
     }, 1000);
     
-    try {
-      const maintenanceDoc = await getDoc(doc(db, 'system', 'maintenance'));
-      if (maintenanceDoc.exists()) {
-        const data = maintenanceDoc.data();
-        this.maintenanceMessage = data.message;
-        this.maintenanceEstimate = data.estimatedCompletion;
-        this.showProgress = data.showProgress !== false;
-      }
-    } catch (err) {
-      console.error('Error loading maintenance info:', err);
-    }
+    // Local mode: maintenance details are static/fallback.
   },
   beforeUnmount() {
     if (this.progressInterval) {

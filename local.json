@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "id": "super-admin-1",
+      "email": "superadmin@barangay.local",
+      "password": "superadmin123",
+      "role": "super_admin",
+      "profile": {
+        "name": "Super Admin"
+      }
+    }
+  ],
+  "residents": [],
+  "staffAccounts": []
+}

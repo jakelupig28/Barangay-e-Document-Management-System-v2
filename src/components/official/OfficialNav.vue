@@ -93,23 +93,19 @@
 </template>
 
 <script>
-import { auth } from '@/firebase/config';
 import { useRouter } from 'vue-router';
-import { ref } from 'vue';
+import { ref, getCurrentInstance } from 'vue';
 
 export default {
   name: 'OfficialSidebarLayout',
   setup() {
     const router = useRouter();
+    const vm = getCurrentInstance();
     const isCollapsed = ref(false);
 
     const logout = async () => {
-      try {
-        await auth.signOut();
-        router.push('/login');
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
+      await vm.proxy.$store.dispatch('logout');
+      router.push('/login');
     };
 
     const toggleSidebar = () => {

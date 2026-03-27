@@ -233,12 +233,8 @@ export default {
     }
   },
   async created() {
-    await this.fetchStats()
-    await this.fetchRecentRequests()
-    await this.fetchRecentReports()
-    await this.fetchAnalytics()
-    this.setupRealTimeNotifications()
-    
+    await this.initializeDashboard()
+
     setInterval(() => {
       this.currentTime = new Date().toLocaleString()
     }, 60000)
@@ -252,7 +248,37 @@ export default {
     }
   },
   methods: {
+    isFirebaseReady() {
+      return !!(db && typeof db === 'object' && typeof db.app !== 'undefined')
+    },
+    async initializeDashboard() {
+      if (!this.isFirebaseReady()) {
+        this.loadLocalDashboardData()
+        return
+      }
+      await this.fetchStats()
+      await this.fetchRecentRequests()
+      await this.fetchRecentReports()
+      await this.fetchAnalytics()
+      this.setupRealTimeNotifications()
+    },
+    loadLocalDashboardData() {
+      // Keep the original layout while running in local JSON mode.
+      this.stats.totalResidents = 0
+      this.stats.pendingRequests = 0
+      this.stats.completedRequests = 0
+      this.stats.pendingReports = 0
+      this.stats.resolvedReports = 0
+      this.recentRequests = []
+      this.recentReports = []
+      this.notifications = []
+      this.unreadCount = 0
+    },
     async fetchStats() {
+      if (!this.isFirebaseReady()) {
+        this.loadLocalDashboardData()
+        return
+      }
       // Get total residents count
       const residentsQuery = query(collection(db, 'users'), where('role', '==', 'resident'))
       const residentsSnapshot = await getDocs(residentsQuery)

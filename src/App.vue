@@ -16,7 +16,7 @@
       <template v-if="!maintenanceMode || isAdmin">
         
         <!-- SK Layout -->
-        <template v-if="userRole === 'sk' && showNav">
+        <template v-if="userRole === 'sk' && showNav && isSkRoute">
           <SKNav>
             <Notification />
             <main><router-view /></main>
@@ -24,7 +24,7 @@
         </template>
 
         <!-- Resident Layout -->
-        <template v-else-if="userRole === 'resident' && showNav">
+        <template v-else-if="userRole === 'resident' && showNav && isResidentRoute">
           <ResidentNav>
             <Notification />
             <router-view />
@@ -32,7 +32,7 @@
         </template>
 
         <!-- Official Layout -->
-        <template v-else-if="userRole === 'official' && showNav">
+        <template v-else-if="userRole === 'barangay_staff' && showNav && isStaffRoute">
           <OfficialNav>
             <Notification />
             <router-view />
@@ -40,7 +40,7 @@
         </template>
 
         <!-- Admin Layout -->
-        <template v-else-if="userRole === 'admin' && showNav">
+        <template v-else-if="userRole === 'super_admin' && showNav && isAdminRoute">
           <AdminNav />
           <Notification />
           <main><router-view /></main>
@@ -125,10 +125,22 @@ export default {
       return this.$store.state.auth.user?.role ?? null;
     },
     maintenanceMode() {
-      return this.$store.state.maintenance;
+      return this.$store.state.system?.maintenance || false;
     },
     isAdmin() {
-      return this.userRole === 'admin';
+      return this.userRole === 'super_admin';
+    },
+    isResidentRoute() {
+      return this.$route.path.startsWith('/resident');
+    },
+    isStaffRoute() {
+      return this.$route.path.startsWith('/official');
+    },
+    isAdminRoute() {
+      return this.$route.path.startsWith('/admin');
+    },
+    isSkRoute() {
+      return this.$route.path.startsWith('/sk');
     }
   },
   watch: {
@@ -145,8 +157,7 @@ export default {
   },
   async created() {
     try {
-      await this.$store.dispatch('auth/initializeAuth');
-      await this.$store.dispatch('checkMaintenanceStatus');
+      await this.$store.dispatch('initializeAuth');
     } catch (e) {
       console.error('Error initializing auth:', e);
     }

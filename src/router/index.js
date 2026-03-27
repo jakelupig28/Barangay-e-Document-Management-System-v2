@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { auth } from '@/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/config';
 import store from '@/store';
+import localDb from '@/services/localDb';
 
 // Public views
 import Home from '@/views/Home.vue';
@@ -33,6 +31,7 @@ import SKMember from '@/components/sk/SKMember.vue';
 
 // Admin components
 import AdminDashboard from '@/components/admin/AdminDashboard.vue';
+import StaffPasswordChange from '@/components/official/StaffPasswordChange.vue';
 
 import NotFound from '@/views/NotFound.vue'
 
@@ -72,14 +71,14 @@ const routes = [
     meta: { requiresAuth: true, allowedRoles: ['resident'], title: 'Resident Setting' }
   },
   // Barangay Official routes
-  { path: '/official/dashboard', name: 'official-dashboard', component: OfficialDashboard, meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Official Dashboard' } },
-  { path: '/official/residents', name: 'official-residents', component: ManageResidents, meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Manage Residents' } },
-  { path: '/official/requests', name: 'official-requests', component: ManageRequests, meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Manage Requests' } },
+  { path: '/official/dashboard', name: 'official-dashboard', component: OfficialDashboard, meta: { requiresAuth: true, allowedRoles: ['barangay_staff'], title: 'Barangay Staff Dashboard' } },
+  { path: '/official/residents', name: 'official-residents', component: ManageResidents, meta: { requiresAuth: true, allowedRoles: ['barangay_staff'], title: 'Manage Residents' } },
+  { path: '/official/requests', name: 'official-requests', component: ManageRequests, meta: { requiresAuth: true, allowedRoles: ['barangay_staff'], title: 'Manage Requests' } },
   {
   path: '/official/reports',
   name: 'OfficialReports',
   component: () => import('@/components/official/ManageReports.vue'),
-  meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Reports' }
+  meta: { requiresAuth: true, allowedRoles: ['barangay_staff'], title: 'Reports' }
   },
   {
   path: '/official/requests/:id',
@@ -99,13 +98,13 @@ const routes = [
     path: '/official/settings',
     name: 'official-settings',
     component: () => import('@/components/official/BarangaySettings.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Barangay Settings' },
+    meta: { requiresAuth: true, allowedRoles: ['barangay_staff'], title: 'Barangay Settings' },
   },
   {
     path: '/official/templates',
     name: 'certificate-templates',
     component: () => import('@/components/official/CertificateTemplates.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['official'], title: 'Certificate Templates' },
+    meta: { requiresAuth: true, allowedRoles: ['barangay_staff'], title: 'Certificate Templates' },
   },
 {
   path: '/official/resident/:id',
@@ -126,7 +125,8 @@ const routes = [
   { path: '/sk/members', name: 'sk-member', component: SKMember, meta: { requiresAuth: true, allowedRoles: ['sk'], title: 'SK Member' } },
 
   // Admin routes
-  { path: '/admin/dashboard', name: 'admin-dashboard', component: AdminDashboard, meta: { requiresAuth: true, allowedRoles: ['admin'], title: 'Admin Dashboard' } },
+  { path: '/admin/dashboard', name: 'admin-dashboard', component: AdminDashboard, meta: { requiresAuth: true, allowedRoles: ['super_admin'], title: 'Super Admin Dashboard' } },
+  { path: '/staff/change-password', name: 'staff-change-password', component: StaffPasswordChange, meta: { requiresAuth: true, allowedRoles: ['barangay_staff'], title: 'Change Password' } },
 
   // Catch-all
  {
@@ -167,21 +167,18 @@ const router = createRouter({
   },
 });
 
-// Dashboard route redirect helper
 function getDashboardRoute(role) {
   const routes = {
     resident: { name: 'resident-dashboard' },
-    official: { name: 'official-dashboard' },
-    sk: { name: 'sk-dashboard' },
-    admin: { name: 'admin-dashboard' },
+    barangay_staff: { name: 'official-dashboard' },
+    super_admin: { name: 'admin-dashboard' },
   };
   return routes[role] || { name: 'home' };
 }
 
 // Router guard
 router.beforeEach(async (to, from, next) => {
-  await auth.authStateReady();
-  const currentUser = auth.currentUser;
+  const currentUser = localDb.getSessionUser();
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const requiresGuest = to.matched.some(record => record.meta.requiresGuest);
@@ -190,89 +187,34 @@ router.beforeEach(async (to, from, next) => {
   // Set document title
   document.title = to.meta.title ? `${to.meta.title} | Barangay Information System` : 'Barangay Information System';
 
-  // Not logged in and route needs auth
   if (requiresAuth && !currentUser) {
     return next({ name: 'login', query: { redirect: to.fullPath } });
   }
 
-  // Logged in but on guest-only page (login/register)
   if (requiresGuest && currentUser) {
-    try {
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        store.commit('setAuth', {
-          uid: currentUser.uid,
-          email: currentUser.email,
-          name: userData.name,
-          approved: userData.isApproved,
-          role: userData.role,
-        });
-        
-        // If user is not approved, allow them to stay on pending-approval
-        if (!userData.isApproved && to.name === 'pending-approval') {
-          return next();
-        }
-        
-        return next(getDashboardRoute(userData.role));
-      }
-    } catch (err) {
-      console.error('Error on guest redirect:', err);
-    }
-    return next({ name: 'home' });
+    return next(getDashboardRoute(currentUser.role));
   }
 
-  // Refresh case: logged in but store is empty
   if (currentUser && !store.state.auth.user) {
-    try {
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        store.commit('setAuth', {
-          uid: currentUser.uid,
-          email: currentUser.email,
-          name: userData.name,
-          approved: userData.isApproved,
-          role: userData.role,
-        });
-
-        // If user is not approved and trying to access other routes
-        if (!userData.isApproved && to.name !== 'pending-approval') {
-          return next({ name: 'pending-approval' });
-        }
-
-        // If on home page after refresh, redirect to dashboard
-        if (to.path === '/') {
-          return next(getDashboardRoute(userData.role));
-        }
-      } else {
-        await auth.signOut();
-        return next({ name: 'login' });
-      }
-    } catch (err) {
-      console.error('Error on refresh:', err);
-      await auth.signOut();
-      return next({ name: 'login' });
-    }
+    store.commit('setAuth', {
+      uid: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.profile?.name || currentUser.email,
+      role: currentUser.role,
+    });
   }
 
-  // Logged in user, checking approval & role
-  if (requiresAuth && currentUser) {
-    const user = store.state.auth.user;
-
-    // If not approved yet and not already on pending-approval
-    if (user && user.approved === false && to.name !== 'pending-approval') {
+  if (requiresAuth && currentUser && currentUser.role === 'resident') {
+    const residentRecord = localDb.readDb().residents.find((r) => r.userId === currentUser.id);
+    if (residentRecord && residentRecord.status !== 'approved' && to.name !== 'pending-approval') {
       return next({ name: 'pending-approval' });
     }
+  }
 
-    // If approved but on pending-approval, redirect to dashboard
-    if (user && user.approved === true && to.name === 'pending-approval') {
-      return next(getDashboardRoute(user.role));
-    }
-
-    // Role not allowed for this route
-    if (allowedRoles.length && !allowedRoles.includes(user?.role)) {
-      return next(getDashboardRoute(user.role));
+  if (requiresAuth && allowedRoles.length) {
+    const currentRole = currentUser?.role;
+    if (!allowedRoles.includes(currentRole)) {
+      return next(getDashboardRoute(currentRole));
     }
   }
 
