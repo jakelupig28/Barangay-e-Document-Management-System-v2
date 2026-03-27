@@ -47,6 +47,13 @@ function readDb() {
 
 function writeDb(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  
+  // Sync to local.json through the dev server middleware silently
+  fetch('/api/sync-local', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).catch(e => console.warn('Failed to sync to local.json:', e));
 }
 
 function setSession(user) {
@@ -234,6 +241,13 @@ function updateResidentValidation(residentId, action, rejectionMessage = '') {
   writeDb(db);
 }
 
+function createRequest(requestData) {
+  const db = readDb();
+  if (!db.requests) db.requests = [];
+  db.requests.push(requestData);
+  writeDb(db);
+}
+
 export default {
   readDb,
   login,
@@ -246,4 +260,6 @@ export default {
   getPendingResidents,
   getResidentById,
   updateResidentValidation,
+  writeDb,
+  createRequest
 };

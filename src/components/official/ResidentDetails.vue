@@ -158,6 +158,21 @@
         </div>
       </div>
 
+      <!-- Uploaded ID Grid Layout -->
+      <div class="mt-4" v-if="resident.barangayIdImage">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-light border-0 py-3 px-4">
+            <h5 class="card-title mb-0 d-flex align-items-center">
+              <i class="fas fa-id-card text-primary me-2"></i>
+              Uploaded Valid ID
+            </h5>
+          </div>
+          <div class="card-body p-4 text-center">
+            <img :src="resident.barangayIdImage" alt="Barangay ID" class="img-fluid rounded border shadow-sm" style="max-height: 400px; object-fit: contain;">
+          </div>
+        </div>
+      </div>
+
       <!-- Status & Approval (Grid Layout) -->
       <div class="mt-4">
         <div class="card border-0 shadow-sm">
@@ -289,19 +304,22 @@ export default {
         if (!this.isFirebaseReady()) {
           const dbData = localDb.readDb();
           const user = dbData.users?.find(u => u.id === this.residentId);
+          const residentObj = dbData.residents?.find(r => r.userId === this.residentId);
           if (user) {
             this.resident = {
               id: user.id,
               email: user.email,
               role: user.role,
-              status: user.status || 'approved',
-              isApproved: user.status === 'approved' || user.role !== 'resident',
+              status: user.status || (residentObj ? residentObj.status : 'approved'),
+              isApproved: user.status === 'approved' || (residentObj && residentObj.status === 'approved') || user.role !== 'resident',
               name: user.profile?.name || user.email,
               contact: user.profile?.contact || '',
               address: user.profile?.address || '',
               birthdate: user.profile?.birthdate || '',
               gender: user.profile?.gender || '',
-              createdAt: user.profile?.createdAt || ''
+              createdAt: user.profile?.createdAt || (residentObj ? residentObj.createdAt : ''),
+              barangayIdImage: residentObj ? residentObj.barangayIdImage : null,
+              idExpiresAt: residentObj ? residentObj.idExpiresAt : null
             };
             return;
           } else {
@@ -387,10 +405,7 @@ export default {
             user.isApproved = true;
             const resident = dbData.residents?.find(r => r.userId === this.residentId);
             if(resident) resident.status = 'approved';
-            localDb.readDb = () => dbData; // Mock write, but actually we need writeDb
-            // the localDb doesn't perfectly expose writeDb, but updating it by reference usually works if we serialize it,
-            // To be safe, let's just use localStorage directly since we have the data
-            localStorage.setItem('barangay_db', JSON.stringify(dbData));
+            localDb.writeDb(dbData);
           }
         } else {
           const docRef = doc(db, 'users', this.residentId)
@@ -435,7 +450,7 @@ export default {
               resident.status = 'rejected';
               resident.rejectionMessage = reason;
             }
-            localStorage.setItem('barangay_db', JSON.stringify(dbData));
+            localDb.writeDb(dbData);
           }
         } else {
           const docRef = doc(db, 'users', this.residentId)
@@ -475,7 +490,7 @@ export default {
         if (!this.isFirebaseReady()) {
           const dbData = localDb.readDb();
           dbData.users = dbData.users.filter(u => u.id !== this.residentId);
-          localStorage.setItem('barangay_db', JSON.stringify(dbData));
+          localDb.writeDb(dbData);
         } else {
           await deleteDoc(doc(db, 'users', this.residentId))
         }

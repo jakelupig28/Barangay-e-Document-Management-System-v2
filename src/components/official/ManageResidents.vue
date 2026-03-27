@@ -187,7 +187,7 @@ export default {
             user.isApproved = true;
             const resident = dbData.residents?.find(r => r.userId === id);
             if (resident) resident.status = 'approved';
-            localStorage.setItem('barangay_db', JSON.stringify(dbData));
+            localDb.writeDb(dbData);
           }
         } else {
           const docRef = doc(db, 'users', id);
@@ -231,7 +231,7 @@ export default {
               resident.status = 'rejected';
               resident.rejectionMessage = reason;
             }
-            localStorage.setItem('barangay_db', JSON.stringify(dbData));
+            localDb.writeDb(dbData);
           }
         } else {
           const docRef = doc(db, 'users', id);

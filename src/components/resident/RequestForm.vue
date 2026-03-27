@@ -109,6 +109,7 @@
 import { db } from '@/firebase/config'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
+import localDb from '@/services/localDb'
 
 export default {
   name: 'DocumentRequest',
@@ -122,10 +123,21 @@ export default {
     }
   },
   created() {
-    const auth = getAuth()
-    this.currentUser = auth.currentUser
+    try {
+      if (this.isFirebaseReady()) {
+        const auth = getAuth()
+        this.currentUser = auth.currentUser
+      } else {
+        this.currentUser = localDb.getSessionUser()
+      }
+    } catch (e) {
+      this.currentUser = localDb.getSessionUser()
+    }
   },
   methods: {
+    isFirebaseReady() {
+      return !!(db && typeof db === 'object' && typeof db.app !== 'undefined')
+    },
     generateRequestId() {
       const prefix = 'BRGY'
       const now = new Date()
@@ -142,18 +154,24 @@ export default {
 
         const requestData = {
           id: this.requestId,
-          userId: this.currentUser.uid,
-          userName: this.currentUser.displayName || this.currentUser.email.split('@')[0],
+          userId: this.currentUser?.uid || this.currentUser?.id,
+          userName: this.currentUser?.displayName || this.currentUser?.profile?.name || (this.currentUser?.email ? this.currentUser.email.split('@')[0] : 'Resident'),
           documentType: this.request.type === 'other' ? this.request.otherType : this.request.type,
           purpose: this.request.purpose,
           notes: this.request.notes || 'None',
           status: 'pending',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          createdAt: new Date().toISOString(), // Use simple ISO instead of firestore timestamp for local compatibility
+          updatedAt: new Date().toISOString(),
           isActive: true
         }
 
-        await addDoc(collection(db, 'requests'), requestData)
+        if (this.isFirebaseReady()) {
+          requestData.createdAt = serverTimestamp();
+          requestData.updatedAt = serverTimestamp();
+          await addDoc(collection(db, 'requests'), requestData)
+        } else {
+          localDb.createRequest(requestData)
+        }
 
         this.showSuccessModal = true
         this.isSubmitting = false
