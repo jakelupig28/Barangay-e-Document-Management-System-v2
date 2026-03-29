@@ -31,10 +31,24 @@
           <form @submit.prevent="registerResident" class="auth-form">
             <div class="form-grid">
               
-              <!-- Full Name -->
-              <div class="form-group floating-group full-width">
-                <input v-model.trim="form.name" type="text" class="modern-input" id="nameInput" placeholder=" " required />
-                <label for="nameInput" class="floating-label">Full Name</label>
+              <!-- First Name -->
+              <div class="form-group floating-group">
+                <input v-model.trim="form.firstName" type="text" class="modern-input" id="firstNameInput" placeholder=" " required />
+                <label for="firstNameInput" class="floating-label">First Name</label>
+                <i class="fas fa-user input-icon"></i>
+              </div>
+
+              <!-- Middle Name -->
+              <div class="form-group floating-group">
+                <input v-model.trim="form.middleName" type="text" class="modern-input" id="middleNameInput" placeholder=" " />
+                <label for="middleNameInput" class="floating-label">Middle Name</label>
+                <i class="fas fa-user input-icon"></i>
+              </div>
+
+              <!-- Last Name -->
+              <div class="form-group floating-group">
+                <input v-model.trim="form.lastName" type="text" class="modern-input" id="lastNameInput" placeholder=" " required />
+                <label for="lastNameInput" class="floating-label">Last Name</label>
                 <i class="fas fa-user input-icon"></i>
               </div>
 
@@ -50,6 +64,18 @@
                 <input v-model.trim="form.contact" type="text" class="modern-input" id="contactInput" placeholder=" " required />
                 <label for="contactInput" class="floating-label">Contact Number</label>
                 <i class="fas fa-phone input-icon"></i>
+              </div>
+
+              <!-- Gender -->
+              <div class="form-group floating-group">
+                <select v-model="form.gender" class="modern-input has-value" id="genderInput" required>
+                  <option value="" disabled>Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                <label for="genderInput" class="floating-label fixed-label">Gender</label>
+                <i class="fas fa-venus-mars input-icon"></i>
               </div>
 
               <!-- Password -->
@@ -86,18 +112,6 @@
                 <i class="fas fa-child input-icon"></i>
               </div>
 
-              <!-- Gender -->
-              <div class="form-group floating-group full-width">
-                <select v-model="form.gender" class="modern-input has-value" id="genderInput" required>
-                  <option value="" disabled>Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-                <label for="genderInput" class="floating-label fixed-label">Gender</label>
-                <i class="fas fa-venus-mars input-icon"></i>
-              </div>
-
               <!-- Complete Address -->
               <div class="form-group floating-group full-width">
                 <input v-model.trim="form.address" type="text" class="modern-input" id="addressInput" placeholder=" " required />
@@ -108,12 +122,15 @@
               <!-- File Upload -->
               <div class="form-group full-width upload-group">
                 <label class="upload-label text-muted"><i class="fas fa-id-card pb-1 mr-1"></i> Upload Valid Barangay ID (Image)</label>
-                <div class="file-drop-area">
-                  <input class="file-input" type="file" accept="image/*" @change="handleFileChange" id="fileUpload" required />
-                  <span class="file-message">
-                    <span v-if="barangayIdImage" class="text-success fw-bold"><i class="fas fa-check-circle"></i> Image Selected</span>
+                <div class="file-drop-area" :class="{'has-image': barangayIdImage}">
+                  <input class="file-input" type="file" accept="image/*" @change="handleFileChange" id="fileUpload" :required="!barangayIdImage" />
+                  <div class="file-message">
+                    <div v-if="barangayIdImage" class="image-preview-container">
+                      <img :src="barangayIdImage" alt="ID Preview" class="id-preview-image" />
+                      <div class="change-image-text"><i class="fas fa-edit"></i> Click or Drag to Change Image</div>
+                    </div>
                     <span v-else>Drag & Drop or Click to Browse</span>
-                  </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -140,6 +157,19 @@
         </div>
       </div>
     </div>
+
+    <!-- Success Modal -->
+    <div v-if="showSuccessModal" class="custom-modal-overlay">
+      <div class="custom-modal">
+        <button class="close-btn" @click="closeSuccessModal" aria-label="Close message"><i class="fas fa-times"></i></button>
+        <div class="modal-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h3 class="modal-title">Registration Successful!</h3>
+        <p class="modal-message">Your account will be under validation by Barangay Staff. Please wait a couple of minutes. Thank you.</p>
+        <button class="modal-btn" @click="closeSuccessModal">OK</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -151,7 +181,9 @@ export default {
   data() {
     return {
       form: {
-        name: '',
+        firstName: '',
+        middleName: '',
+        lastName: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -166,6 +198,7 @@ export default {
       loading: false,
       error: '',
       success: '',
+      showSuccessModal: false,
     };
   },
   computed: {
@@ -210,20 +243,25 @@ export default {
         if (this.form.password !== this.form.confirmPassword) throw new Error('Passwords do not match.');
         if (!this.barangayIdImage) throw new Error('Present Barangay ID image is required.');
 
+        const combinedName = `${this.form.firstName} ${this.form.middleName ? this.form.middleName.trim() + ' ' : ''}${this.form.lastName}`.trim();
+
         localDb.registerResident({
           ...this.form,
+          name: combinedName,
           age: this.computedAge,
           barangayIdImage: this.barangayIdImage,
         });
 
-        window.alert('Your account will be under validation by Barangay Staff. Please wait a couple of minutes. Thank you.');
-        this.success = 'Registration submitted with status: pending_validation';
-        this.$router.push({ name: 'login' });
+        this.showSuccessModal = true;
       } catch (err) {
         this.error = err.message || 'Registration failed.';
       } finally {
         this.loading = false;
       }
+    },
+    closeSuccessModal() {
+      this.showSuccessModal = false;
+      this.$router.push({ name: 'login' });
     },
   },
 };
@@ -489,6 +527,12 @@ export default {
   background-color: #f8fafc;
   transition: 0.2s ease;
   cursor: pointer;
+  min-height: 100px;
+}
+.file-drop-area.has-image {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  padding: 1rem;
 }
 .file-drop-area:hover {
   border-color: #3b82f6;
@@ -502,12 +546,39 @@ export default {
   width: 100%;
   cursor: pointer;
   opacity: 0;
+  z-index: 2;
 }
 .file-message {
   font-size: 0.95rem;
   color: #64748b;
   font-weight: 500;
   pointer-events: none;
+  z-index: 1;
+  width: 100%;
+  text-align: center;
+}
+
+.image-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.id-preview-image {
+  max-width: 100%;
+  max-height: 180px;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.change-image-text {
+  font-size: 0.85rem;
+  color: #3b82f6;
+  font-weight: 600;
+  margin-top: 4px;
 }
 
 /* Buttons and Interactions */
@@ -582,6 +653,95 @@ export default {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
+}
+
+/* Custom Modal */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.custom-modal {
+  background: white;
+  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+  animation: modalScaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0.5rem;
+}
+
+.close-btn:hover {
+  color: #4b5563;
+}
+
+.modal-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  color: #10b981;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.modal-message {
+  font-size: 1rem;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.modal-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+}
+
+.modal-btn:hover {
+  background: #059669;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalScaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 @media (max-width: 900px) {

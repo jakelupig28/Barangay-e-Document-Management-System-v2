@@ -134,7 +134,7 @@ export default {
       return this.$route.path.startsWith('/resident');
     },
     isStaffRoute() {
-      return this.$route.path.startsWith('/official');
+      return this.$route.path.startsWith('/official') || this.$route.path.startsWith('/staff');
     },
     isAdminRoute() {
       return this.$route.path.startsWith('/admin');

@@ -218,6 +218,13 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  if (currentUser && currentUser.role === 'barangay_staff' && to.name !== 'staff-change-password') {
+    const staffAccount = localDb.getStaffAccountByUserId(currentUser.id);
+    if (staffAccount && staffAccount.mustChangePassword) {
+      return next({ name: 'staff-change-password' });
+    }
+  }
+
   next();
 });
 

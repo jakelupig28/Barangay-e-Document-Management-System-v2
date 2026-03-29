@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-overlay" v-if="isVisible" @click.self="close">
+  <div class="modal-overlay" v-if="isVisible">
     <div class="modal-content">
       <div class="modal-header">
         <h2>Create Barangay Staff Account</h2>

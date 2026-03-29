@@ -3,8 +3,95 @@
     <!-- Header Section -->
     <div class="settings-header">
       <div class="header-content">
-        <h1 class="settings-title">Barangay Settings</h1>
-        <p class="settings-subtitle">Manage your barangay information and configuration</p>
+        <h1 class="settings-title">Staff Settings</h1>
+        <p class="settings-subtitle">Manage your personal and barangay configuration</p>
+      </div>
+    </div>
+
+    <!-- Personal Profile Form -->
+    <div class="settings-card mb-4">
+      <div class="card-header">
+        <h2><i class="fas fa-user-circle"></i> Personal Profile</h2>
+        <p>Update your personal information</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>First Name</label>
+          <div class="input-container">
+            <i class="fas fa-user input-icon"></i>
+            <input v-model="staffProfile.firstName" type="text" placeholder="First Name" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Middle Name</label>
+          <div class="input-container">
+            <i class="fas fa-user input-icon"></i>
+            <input v-model="staffProfile.middleName" type="text" placeholder="Middle Name" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Last Name</label>
+          <div class="input-container">
+            <i class="fas fa-user input-icon"></i>
+            <input v-model="staffProfile.lastName" type="text" placeholder="Last Name" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Date of Birth</label>
+          <div class="input-container">
+            <i class="fas fa-calendar input-icon"></i>
+            <input v-model="staffProfile.dateOfBirth" type="date" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Age</label>
+          <div class="input-container">
+            <i class="fas fa-birthday-cake input-icon"></i>
+            <input :value="computedAge" type="number" readonly class="form-input bg-light text-muted" placeholder="Auto-calculated" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Gender</label>
+          <div class="input-container">
+            <i class="fas fa-venus-mars input-icon"></i>
+            <select v-model="staffProfile.gender" class="form-input">
+              <option value="" disabled>Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Contact Number</label>
+          <div class="input-container">
+            <i class="fas fa-phone input-icon"></i>
+            <input v-model="staffProfile.contactNum" type="text" placeholder="Contact Number" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email Address</label>
+          <div class="input-container">
+            <i class="fas fa-envelope input-icon"></i>
+            <input v-model="staffProfile.email" type="email" placeholder="Email Address" class="form-input" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions mt-3 border-0 pt-0">
+        <button class="save-btn" @click="savePersonalProfile" :disabled="isSavingProfile" :class="{ 'saving': isSavingProfile }">
+          <i v-if="isSavingProfile" class="fas fa-spinner fa-spin"></i>
+          <i v-else class="fas fa-save"></i>
+          <span>{{ isSavingProfile ? 'Saving...' : 'Save Profile' }}</span>
+        </button>
       </div>
     </div>
 
@@ -208,9 +295,11 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { db } from "@/firebase/config";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import localDb from "@/services/localDb";
+import store from "@/store";
 
 export default {
   name: "BarangaySettings",
@@ -233,6 +322,114 @@ export default {
     const message = ref("");
     const isSaving = ref(false);
     const getSettingsRef = () => doc(db, "config", "barangaySettings");
+
+    // --- Personal Profile Setup ---
+    const currentUser = localDb.getSessionUser() || store.state.auth.user;
+    const currentUserId = currentUser ? currentUser.id || currentUser.uid : null;
+
+    const staffProfile = ref({
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      dateOfBirth: "",
+      gender: "",
+      contactNum: "",
+      email: currentUser?.email || "",
+    });
+
+    const isSavingProfile = ref(false);
+
+    const computedAge = computed(() => {
+      if (!staffProfile.value.dateOfBirth) return "";
+      const today = new Date();
+      const birthDate = new Date(staffProfile.value.dateOfBirth);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    });
+
+    const fetchPersonalProfile = async () => {
+      if (!currentUserId) return;
+      
+      if (!isFirebaseReady()) {
+        const localData = localDb.readDb();
+        const user = localData.users?.find(u => u.id === currentUserId);
+        if (user && user.profile) {
+          staffProfile.value = {
+            ...staffProfile.value,
+            ...user.profile,
+            email: user.email || staffProfile.value.email
+          };
+        }
+        return;
+      }
+      
+      try {
+        const snap = await getDoc(doc(db, "users", currentUserId));
+        if (snap.exists()) {
+          const userData = snap.data();
+          if (userData.profile) {
+            staffProfile.value = {
+              ...staffProfile.value,
+              ...userData.profile,
+              email: userData.email || staffProfile.value.email
+            };
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load personal profile:", error);
+      }
+    };
+
+    const savePersonalProfile = async () => {
+      if (!currentUserId) return;
+      isSavingProfile.value = true;
+      
+      const profileDataToSave = {
+        firstName: staffProfile.value.firstName,
+        middleName: staffProfile.value.middleName,
+        lastName: staffProfile.value.lastName,
+        dateOfBirth: staffProfile.value.dateOfBirth,
+        age: computedAge.value,
+        gender: staffProfile.value.gender,
+        contactNum: staffProfile.value.contactNum,
+        name: `${staffProfile.value.firstName} ${staffProfile.value.middleName ? staffProfile.value.middleName.charAt(0) + '.' : ''} ${staffProfile.value.lastName}`.replace(/\s+/g, ' ').trim(),
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        if (!isFirebaseReady()) {
+          const localData = localDb.readDb();
+          const userIndex = localData.users?.findIndex(u => u.id === currentUserId);
+          if (userIndex !== -1 && localData.users) {
+            localData.users[userIndex].profile = {
+              ...(localData.users[userIndex].profile || {}),
+              ...profileDataToSave
+            };
+            if (staffProfile.value.email && staffProfile.value.email !== localData.users[userIndex].email) {
+              localData.users[userIndex].email = staffProfile.value.email;
+            }
+            localDb.writeDb(localData);
+          }
+        } else {
+          await updateDoc(doc(db, "users", currentUserId), {
+            profile: profileDataToSave,
+            email: staffProfile.value.email || currentUser.email
+          });
+        }
+        message.value = "✅ Personal profile saved successfully!";
+      } catch (error) {
+        console.error("Error saving profile:", error);
+        message.value = "❌ Error saving personal profile.";
+      } finally {
+        isSavingProfile.value = false;
+        setTimeout(() => (message.value = ""), 3500);
+      }
+    };
+    // ------------------------------
 
     const messageType = computed(() => {
       return message.value.includes("❌") ? "error" : "success";
@@ -295,10 +492,17 @@ export default {
       setTimeout(() => (message.value = ""), 2000);
     };
 
-    onMounted(fetchSettings);
+    onMounted(() => {
+      fetchSettings();
+      fetchPersonalProfile();
+    });
 
     return { 
-      barangayInfo, 
+      barangayInfo,
+      staffProfile,
+      computedAge,
+      isSavingProfile,
+      savePersonalProfile,
       message, 
       isSaving, 
       saveSettings,

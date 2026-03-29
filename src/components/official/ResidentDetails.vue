@@ -379,7 +379,7 @@ export default {
     },
 
     isIdValid(expiryDate) {
-      if (!expiryDate) return false
+      if (!expiryDate) return true; // Default to Valid if no expiry date provided
       
       const now = new Date()
       const expiry = expiryDate.seconds ? new Date(expiryDate.seconds * 1000) : new Date(expiryDate)

@@ -296,6 +296,7 @@ import {
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '@/firebase/config';
 import PrintableDocument from '@/components/official/PrintableDocument.vue';
+import localDb from '@/services/localDb';
 
 export default {
   components: {
@@ -401,7 +402,40 @@ export default {
 
     const fetchRequests = async () => {
       if (!isFirebaseReady()) {
-        isLoading.value = false;
+        try {
+          isLoading.value = true;
+          error.value = null;
+          const dbData = localDb.readDb();
+          const reqs = dbData.requests || [];
+          const reqUsers = dbData.users || [];
+          
+          requests.value = reqs.map(req => {
+            const reqUser = reqUsers.find(u => u.id === req.userId);
+            return {
+              id: req.id,
+              documentId: req.id,
+              ...req,
+              userName: req.userName || reqUser?.profile?.name || reqUser?.email || 'Unknown Resident',
+              contact: reqUser?.profile?.contact || reqUser?.contact || 'N/A',
+              email: reqUser?.email || 'N/A',
+              address: req.address || reqUser?.profile?.address || reqUser?.address || 'N/A',
+              createdAt: req.createdAt ? new Date(req.createdAt) : null,
+              updatedAt: req.updatedAt ? new Date(req.updatedAt) : null,
+            };
+          }).sort((a, b) => b.createdAt - a.createdAt);
+
+          stats.value = {
+            pendingRequests: requests.value.filter((r) => r.status === 'pending').length,
+            approvedRequests: requests.value.filter((r) => r.status === 'approved').length,
+            rejectedRequests: requests.value.filter((r) => r.status === 'rejected').length,
+            totalRequests: requests.value.length,
+          };
+        } catch (err) {
+          console.error('Local DB fetch error:', err);
+          error.value = 'Failed to load requests from local storage.';
+        } finally {
+          isLoading.value = false;
+        }
         return;
       }
       try {
@@ -471,6 +505,31 @@ export default {
       try {
         isUpdating.value = true;
         
+        if (!isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          const reqIndex = (dbData.requests || []).findIndex(r => r.id === requestId);
+          if (reqIndex !== -1) {
+            dbData.requests[reqIndex].status = status;
+            dbData.requests[reqIndex].updatedAt = new Date().toISOString();
+            dbData.requests[reqIndex].updatedBy = user.value?.id || user.value?.uid || 'staff';
+            localDb.writeDb(dbData);
+            
+            showToastNotification(
+              status === 'approved' ? 'Request approved!' : 'Request rejected!',
+              status === 'approved' ? 'fas fa-check-circle' : 'fas fa-times-circle'
+            );
+
+            if (selectedRequest.value && selectedRequest.value.id === requestId) {
+              selectedRequest.value.status = status;
+            }
+            fetchRequests();
+          } else {
+             showToastNotification('Request not found in local database.', 'fas fa-exclamation-circle', true);
+          }
+          isUpdating.value = false;
+          return;
+        }
+
         // Query the 'requests' collection to find the document with the custom 'id' field
         const q = query(collection(db, 'requests'), where('id', '==', requestId));
         const querySnapshot = await getDocs(q);
@@ -589,7 +648,14 @@ export default {
 
     onMounted(() => {
       if (!isFirebaseReady()) {
-        isLoading.value = false;
+        const localUser = localDb.getSessionUser();
+        if (localUser) {
+          user.value = localUser;
+          fetchRequests();
+        } else {
+          error.value = 'Please log in to access document requests.';
+          isLoading.value = false;
+        }
         return;
       }
       try {

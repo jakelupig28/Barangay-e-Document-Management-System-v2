@@ -168,6 +168,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '@/firebase/config';
+import localDb from '@/services/localDb';
 
 export default {
   name: 'ManageReports',
@@ -248,7 +249,32 @@ export default {
 
     const fetchReports = async () => {
       if (!isFirebaseReady()) {
-        isLoading.value = false;
+        try {
+          isLoading.value = true;
+          error.value = null;
+          const dbData = localDb.readDb();
+          const localReports = dbData.reports || [];
+          
+          reports.value = localReports.map(rep => ({
+             id: rep.id,
+             customId: rep.id,
+             ...rep,
+             createdAt: rep.createdAt ? new Date(rep.createdAt) : null,
+             updatedAt: rep.updatedAt ? new Date(rep.updatedAt) : null
+          })).sort((a, b) => b.createdAt - a.createdAt);
+
+          stats.value = {
+             pendingReports: reports.value.filter(r => r.status === 'pending').length,
+             inProgressReports: reports.value.filter(r => r.status === 'in-progress').length,
+             resolvedReports: reports.value.filter(r => r.status === 'resolved').length,
+             totalReports: reports.value.length,
+          };
+        } catch (err) {
+          console.error('Local DB fetch error:', err);
+          error.value = 'Failed to load reports from local storage.';
+        } finally {
+          isLoading.value = false;
+        }
         return;
       }
       try {
@@ -299,6 +325,28 @@ export default {
 
       try {
         isUpdating.value = true;
+        if (!isFirebaseReady()) {
+          const dbData = localDb.readDb();
+          const repIndex = (dbData.reports || []).findIndex(r => r.id === reportId);
+          if (repIndex !== -1) {
+            dbData.reports[repIndex].status = status;
+            dbData.reports[repIndex].updatedAt = new Date().toISOString();
+            dbData.reports[repIndex].updatedBy = user.value?.uid || user.value?.id || 'staff';
+            localDb.writeDb(dbData);
+            
+            const messages = {
+              'in-progress': 'Report marked as in progress!',
+              'resolved': 'Report resolved successfully!'
+            };
+            showToastNotification(messages[status] || 'Status updated!', status === 'resolved' ? 'fas fa-check-circle' : 'fas fa-tools');
+            fetchReports();
+          } else {
+             showToastNotification('Report not found in local database.', 'fas fa-exclamation-circle', true);
+          }
+          isUpdating.value = false;
+          return;
+        }
+
         const reportRef = doc(db, 'reports', reportId);
         const docSnapshot = await getDoc(reportRef);
         if (!docSnapshot.exists()) throw new Error(`Report not found`);
@@ -349,7 +397,14 @@ export default {
 
     onMounted(() => {
       if (!isFirebaseReady()) {
-        isLoading.value = false;
+        const localUser = localDb.getSessionUser();
+        if (localUser) {
+          user.value = localUser;
+          fetchReports();
+        } else {
+          error.value = 'Please log in to access reports management.';
+          isLoading.value = false;
+        }
         return;
       }
       try {

@@ -11,7 +11,7 @@
                 <path d="M2 11h1v1H2v-1zm2 0h1v1H4v-1zm-2 2h1v1H2v-1zm2 0h1v1H4v-1zm4-4h1v1H8V9zm2 0h1v1h-1V9zm-2 2h1v1H8v-1zm2 0h1v1h-1v-1zm2-2h1v1h-1V9zm0 2h1v1h-1v-1zM8 7h1v1H8V7zm2 0h1v1h-1V7zm2 0h1v1h-1V7zM8 5h1v1H8V5zm2 0h1v1h-1V5zm2 0h1v1h-1V5zm0-2h1v1h-1V3z"/>
               </svg>
             </div>
-            <span class="brand-text" v-show="!isCollapsed">SB Portal</span>
+            <span class="brand-text" v-show="!isCollapsed">Barangay Staff Portal</span>
           </div>
         </router-link>
         <button 
@@ -180,7 +180,7 @@ export default {
 
 .brand-text {
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   letter-spacing: 0.5px;
   white-space: nowrap;
   transition: opacity 0.2s ease;

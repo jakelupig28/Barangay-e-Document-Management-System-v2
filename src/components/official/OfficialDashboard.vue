@@ -3,7 +3,7 @@
     <div class="dashboard-header">
       <h2><i class=""></i> Barangay Official Dashboard</h2>
       <div class="header-right">
-        <p class="last-updated">Last updated: {{ currentTime }}</p>
+        <RealTimeClock />
         <div class="notification-container">
           <button class="notification-btn" @click="toggleNotifications">
             <i class="fas fa-bell"></i>
@@ -158,8 +158,12 @@
 <script>
 import { db } from '@/firebase/config'
 import { collection, getDocs, query, orderBy, limit, where, onSnapshot } from 'firebase/firestore'
+import RealTimeClock from '@/components/common/RealTimeClock.vue'
 
 export default {
+  components: {
+    RealTimeClock
+  },
   data() {
     return {
       stats: {

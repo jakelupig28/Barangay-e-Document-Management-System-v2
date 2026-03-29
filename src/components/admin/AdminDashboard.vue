@@ -49,6 +49,13 @@
               <span class="nav-text">System Settings</span>
             </a>
           </li>
+          <!-- Personal Profile -->
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeSection === 'profile' }" @click="activeSection = 'profile'; sidebarOpen = false">
+              <i class="nav-icon fas fa-user-circle"></i>
+              <span class="nav-text">Personal Profile</span>
+            </a>
+          </li>
         </ul>
       </nav>
 
@@ -65,7 +72,8 @@
       <div class="content-wrapper">
       <header class="content-header">
         <h1>{{ sectionTitle }}</h1>
-        <div class="header-actions">
+        <div class="header-actions align-items-center gap-3">
+          <RealTimeClock />
           <div class="search-box">
             <i class="fas fa-search"></i>
             <input
@@ -80,6 +88,104 @@
           </button>
         </div>
       </header>
+
+      <!-- Personal Profile Section -->
+      <section v-if="activeSection === 'profile'" class="content-section">
+        <div class="card p-4">
+          <div class="card-header border-0 mb-3 px-0">
+            <h3><i class="fas fa-user-circle me-2"></i> Personal Profile</h3>
+            <p class="text-muted">Update your admin information</p>
+          </div>
+          <div class="card-body px-0">
+            <div class="row g-4">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">First Name</label>
+                <div class="input-container">
+                  <i class="fas fa-user input-icon"></i>
+                  <input v-model="adminProfile.FirstName" type="text" placeholder="First Name" class="form-control" />
+                </div>
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Middle Name</label>
+                <div class="input-container">
+                  <i class="fas fa-user input-icon"></i>
+                  <input v-model="adminProfile.MiddleName" type="text" placeholder="Middle Name" class="form-control" />
+                </div>
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Last Name</label>
+                <div class="input-container">
+                  <i class="fas fa-user input-icon"></i>
+                  <input v-model="adminProfile.LastName" type="text" placeholder="Last Name" class="form-control" />
+                </div>
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Birth Date</label>
+                <div class="input-container">
+                  <i class="fas fa-calendar input-icon"></i>
+                  <input v-model="adminProfile.BirthDate" type="date" class="form-control" />
+                </div>
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Age</label>
+                <div class="input-container">
+                  <i class="fas fa-birthday-cake input-icon"></i>
+                  <input :value="computedAdminAge" type="number" readonly class="form-control bg-light text-muted" placeholder="Auto-calculated" />
+                </div>
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Gender</label>
+                <div class="input-container">
+                  <i class="fas fa-venus-mars input-icon"></i>
+                  <select v-model="adminProfile.Gender" class="form-control">
+                    <option value="" disabled>Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Contact Number</label>
+                <div class="input-container">
+                  <i class="fas fa-phone input-icon"></i>
+                  <input v-model="adminProfile.ContactNo" type="text" placeholder="Contact Number" class="form-control" />
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Email Address</label>
+                <div class="input-container">
+                  <i class="fas fa-envelope input-icon"></i>
+                  <input v-model="adminProfile.Email" type="email" placeholder="Email Address" class="form-control" />
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-bold">Address</label>
+                <div class="input-container">
+                  <i class="fas fa-map-marker-alt input-icon"></i>
+                  <input v-model="adminProfile.Address" type="text" placeholder="Complete Address" class="form-control" />
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+              <button class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2" @click="saveAdminProfile" :disabled="isSavingProfile">
+                <i v-if="isSavingProfile" class="fas fa-spinner fa-spin"></i>
+                <i v-else class="fas fa-save"></i>
+                <span>{{ isSavingProfile ? 'Saving...' : 'Save Profile' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- User Management Section -->
       <section v-if="activeSection === 'users'" class="content-section">
@@ -389,6 +495,7 @@ import * as XLSX from 'xlsx'
 import AnnouncementModal from './AnnouncementModal.vue'
 import ConfirmationModal from './ConfirmationModal.vue'
 import StaffAccountModal from './StaffAccountModal.vue'
+import RealTimeClock from '@/components/common/RealTimeClock.vue'
 import localDb from '@/services/localDb'
 
 export default {
@@ -396,7 +503,8 @@ export default {
   components: {
     AnnouncementModal,
     ConfirmationModal,
-    StaffAccountModal
+    StaffAccountModal,
+    RealTimeClock
   },
   data() {
     return {
@@ -441,7 +549,12 @@ export default {
       deleteAction: null,
       maintenanceEnabled: false,
       maintenanceMessage: '',
-      maintenanceEstimate: ''
+      maintenanceEstimate: '',
+      adminProfile: {
+        FirstName: '', MiddleName: '', LastName: '', BirthDate: '',
+        Gender: '', ContactNo: '', Email: '', Address: ''
+      },
+      isSavingProfile: false
     }
   },
   computed: {
@@ -450,9 +563,21 @@ export default {
         users: 'User Management',
         transactions: 'Transaction History',
         announcements: 'Announcements',
-        system: 'System Settings'
+        system: 'System Settings',
+        profile: 'Personal Profile'
       }
       return sections[this.activeSection] || 'Admin Dashboard'
+    },
+    computedAdminAge() {
+      if (!this.adminProfile.BirthDate) return "";
+      const today = new Date();
+      const birthDate = new Date(this.adminProfile.BirthDate);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
     },
     userInitials() {
       return this.user.name
@@ -513,6 +638,93 @@ export default {
     }
   },
   methods: {
+    isFirebaseReady() {
+      return !!(db && typeof db === 'object' && typeof db.app !== 'undefined');
+    },
+    async fetchAdminProfile() {
+      const currentUser = localDb.getSessionUser() || auth.currentUser;
+      const currentUserId = currentUser ? currentUser.id || currentUser.uid : null;
+      if (!currentUserId) return;
+      
+      try {
+        if (!this.isFirebaseReady()) {
+           const localData = localDb.readDb();
+           const userRow = localData.users?.find(u => u.id === currentUserId);
+           if (userRow && userRow.profile) {
+             this.adminProfile = { ...this.adminProfile, ...userRow.profile };
+             this.adminProfile.Email = userRow.email || this.adminProfile.Email;
+           }
+        } else {
+           const snap = await getDoc(doc(db, "users", currentUserId));
+           if (snap.exists()) {
+             const userData = snap.data();
+             if (userData.profile) {
+               this.adminProfile = { ...this.adminProfile, ...userData.profile };
+               this.adminProfile.Email = userData.email || this.adminProfile.Email;
+             }
+           }
+        }
+      } catch (err) {
+        console.error('Failed to fetch admin profile', err);
+      }
+    },
+    async saveAdminProfile() {
+      const currentUser = localDb.getSessionUser() || auth.currentUser;
+      const currentUserId = currentUser ? currentUser.id || currentUser.uid : null;
+      if (!currentUserId) return;
+      this.isSavingProfile = true;
+      
+      // Update our computed age manually just in case
+      let finalAge = "";
+      if (this.adminProfile.BirthDate) {
+        const today = new Date();
+        const birthDate = new Date(this.adminProfile.BirthDate);
+        finalAge = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) finalAge--;
+      }
+      
+      const profileToSave = {
+        FirstName: this.adminProfile.FirstName,
+        MiddleName: this.adminProfile.MiddleName,
+        LastName: this.adminProfile.LastName,
+        BirthDate: this.adminProfile.BirthDate,
+        Age: finalAge,
+        Gender: this.adminProfile.Gender,
+        ContactNo: this.adminProfile.ContactNo,
+        Address: this.adminProfile.Address,
+        name: `${this.adminProfile.FirstName} ${this.adminProfile.LastName}`.trim(),
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        if (!this.isFirebaseReady()) {
+          const localData = localDb.readDb();
+          const userIndex = localData.users?.findIndex(u => u.id === currentUserId);
+          if (userIndex !== -1 && localData.users) {
+            localData.users[userIndex].profile = {
+              ...(localData.users[userIndex].profile || {}),
+              ...profileToSave
+            };
+            if (this.adminProfile.Email && this.adminProfile.Email !== localData.users[userIndex].email) {
+              localData.users[userIndex].email = this.adminProfile.Email;
+            }
+            localDb.writeDb(localData);
+          }
+        } else {
+          await updateDoc(doc(db, "users", currentUserId), {
+            profile: profileToSave,
+            email: this.adminProfile.Email,
+            name: profileToSave.name
+          });
+        }
+        this.$notify.success('Admin profile saved successfully');
+      } catch (err) {
+        this.$notify.error('Error saving admin profile');
+      } finally {
+        this.isSavingProfile = false;
+      }
+    },
     formatRole(role) {
       const map = {
         admin: 'Administrator',
@@ -974,6 +1186,7 @@ export default {
     async logout() {
       try {
         await signOut(auth)
+        localDb.clearSession()
         this.$router.push('/login')
         this.$notify.success('Logged out successfully')
       } catch (error) {
@@ -1059,6 +1272,7 @@ export default {
     this.fetchTransactions()
     this.fetchAnnouncements()
     this.loadMaintenanceSettings()
+    this.fetchAdminProfile()
   }
 }
 </script>

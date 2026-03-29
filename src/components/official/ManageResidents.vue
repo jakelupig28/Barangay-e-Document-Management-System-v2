@@ -138,7 +138,12 @@ export default {
     async fetchResidents() {
       if (!this.isFirebaseReady()) {
         const localData = localDb.readDb();
-        this.allResidents = localData.users ? localData.users.filter(u => u.role === 'resident') : [];
+        this.allResidents = localData.users ? localData.users.filter(u => u.role === 'resident').map(u => ({
+          ...u,
+          name: u.profile?.name || u.name || 'Not provided',
+          contact: u.profile?.contact || u.contact || 'Not provided',
+          createdAt: u.profile?.createdAt || u.createdAt || null
+        })) : [];
         this.residents = [...this.allResidents];
         this.currentPage = 1;
         return;
@@ -148,10 +153,16 @@ export default {
         const q = query(collection(db, 'users'), where('role', '==', 'resident'))
         const snapshot = await getDocs(q)
 
-        this.allResidents = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
+        this.allResidents = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            name: data.profile?.name || data.name || 'Not provided',
+            contact: data.profile?.contact || data.contact || 'Not provided',
+            createdAt: data.profile?.createdAt || data.createdAt || null
+          }
+        })
 
         this.residents = [...this.allResidents]
         this.currentPage = 1
