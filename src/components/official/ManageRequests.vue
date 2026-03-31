@@ -12,104 +12,163 @@
       <i class="fas fa-spinner fa-spin"></i> Loading requests...
     </div>
 
-    <div v-else class="stats-cards">
-      <div class="stat-card" @click="filterByStatus('pending')" :class="{ active: currentFilter === 'pending' }">
-        <div class="stat-value">{{ stats.pendingRequests }}</div>
-        <div class="stat-label">Pending</div>
-        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+    <div v-else class="stats-grid mb-5">
+      <div class="stat-glass-card pending" @click="filterByStatus('pending')" :class="{ active: currentFilter === 'pending' }">
+        <div class="stat-content">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.pendingRequests }}</div>
+            <div class="stat-label">Pending Requests</div>
+          </div>
+        </div>
+        <div class="stat-progress" :style="{ width: (stats.pendingRequests / (stats.totalRequests || 1) * 100) + '%' }"></div>
       </div>
-      <div class="stat-card" @click="filterByStatus('approved')" :class="{ active: currentFilter === 'approved' }">
-        <div class="stat-value">{{ stats.approvedRequests }}</div>
-        <div class="stat-label">Approved</div>
-        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+
+      <div class="stat-glass-card approved" @click="filterByStatus('approved')" :class="{ active: currentFilter === 'approved' }">
+        <div class="stat-content">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.approvedRequests }}</div>
+            <div class="stat-label">Approved</div>
+          </div>
+        </div>
+        <div class="stat-progress" :style="{ width: (stats.approvedRequests / (stats.totalRequests || 1) * 100) + '%' }"></div>
       </div>
-      <div class="stat-card" @click="filterByStatus('rejected')" :class="{ active: currentFilter === 'rejected' }">
-        <div class="stat-value">{{ stats.rejectedRequests }}</div>
-        <div class="stat-label">Rejected</div>
-        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+
+      <div class="stat-glass-card rejected" @click="filterByStatus('rejected')" :class="{ active: currentFilter === 'rejected' }">
+        <div class="stat-content">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.rejectedRequests }}</div>
+            <div class="stat-label">Rejected</div>
+          </div>
+        </div>
+        <div class="stat-progress" :style="{ width: (stats.rejectedRequests / (stats.totalRequests || 1) * 100) + '%' }"></div>
       </div>
-      <div class="stat-card" @click="filterByStatus('all')" :class="{ active: currentFilter === 'all' }">
-        <div class="stat-value">{{ stats.totalRequests }}</div>
-        <div class="stat-label">Total</div>
-        <div class="stat-icon"><i class="fas fa-file"></i></div>
+
+      <div class="stat-glass-card total" @click="filterByStatus('all')" :class="{ active: currentFilter === 'all' }">
+        <div class="stat-content">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.totalRequests }}</div>
+            <div class="stat-label">Total Requests</div>
+          </div>
+        </div>
+        <div class="stat-progress" style="width: 100%"></div>
       </div>
     </div>
 
-    <div v-if="!isLoading" class="filters">
-      <div class="search-box">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search by resident name..."
-          @input="searchRequests"
-        >
-        <i class="fas fa-search"></i>
+    <div v-if="!isLoading" class="dashboard-controls">
+      <div class="search-and-filter">
+        <div class="search-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            placeholder="Search by resident name or reference ID..."
+            class="professional-input"
+          >
+        </div>
+        <div class="filter-group">
+          <div class="custom-select-wrapper">
+             <i class="fas fa-filter select-icon"></i>
+            <select v-model="documentTypeFilter" class="professional-select">
+              <option value="">All Documents</option>
+              <option v-for="type in documentTypes" :value="type.value" :key="type.value">{{ type.label }}</option>
+            </select>
+          </div>
+          <div class="status-tabs">
+            <button 
+              v-for="status in ['all', 'pending', 'approved', 'rejected']" 
+              :key="status"
+              :class="['status-tab', { active: currentFilter === status }, status]"
+              @click="currentFilter = status"
+            >
+              {{ status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1) }}
+            </button>
+          </div>
+        </div>
       </div>
-      <select v-model="documentTypeFilter" @change="filterRequests" class="form-select">
-        <option value="">All Document Types</option>
-        <option v-for="type in documentTypes" :value="type.value" :key="type.value">{{ type.label }}</option>
-      </select>
     </div>
 
-    <div v-if="!isLoading && filteredRequests.length > 0" class="requests-table">
-      <table>
-        <thead>
+    <div v-if="!isLoading && filteredRequests.length > 0" class="requests-table-container shadow-sm border rounded-4 overflow-hidden">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light text-muted small text-uppercase fw-bold">
           <tr>
-            <th>Request ID</th>
-            <th>Status</th>
-            <th>Date Requested</th>
-            <th>Actions</th>
+            <th class="ps-4 py-3">RESIDENT</th>
+            <th class="py-3">DOCUMENT TYPE</th>
+            <th class="py-3">STATUS</th>
+            <th class="py-3 text-center">DATE REQUESTED</th>
+            <th class="pe-4 py-3 text-end">ACTIONS</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="request in filteredRequests" :key="request.id">
-            <td>{{ request.id || request.documentId || 'N/A' }}</td>
-            <td>
-              <span :class="`status-badge ${request.status}`">
-                <i :class="statusIcons[request.status]"></i>
+          <tr v-for="request in filteredRequests" :key="request.id" class="border-top">
+            <td class="ps-4 py-3">
+              <div class="d-flex align-items-center">
+                <div class="avatar-sm bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; background: rgba(13, 110, 253, 0.1);">
+                  <i class="fas fa-user small"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold text-dark">{{ request.userName }}</div>
+                  <div class="small text-muted">{{ request.id || 'N/A' }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3">
+              <div class="d-flex align-items-center gap-2">
+                <i :class="documentTypeIcons[request.type || request.documentType]" class="text-secondary opacity-75"></i>
+                <span>{{ getDocumentTypeLabel(request.type || request.documentType) }}</span>
+              </div>
+            </td>
+            <td class="py-3">
+              <span :class="['badge rounded-pill px-3 py-2', `badge-${request.status}`]" style="font-weight: 500;">
+                <i :class="statusIcons[request.status]" class="me-1"></i>
                 {{ request.status }}
               </span>
             </td>
-            <td>{{ formatDate(request.createdAt) }}</td>
-            <td>
-              <div class="action-buttons">
-                <!-- In the actions column of your table -->
+            <td class="py-3 text-center text-muted small">
+              {{ formatDate(request.createdAt) }}
+            </td>
+            <td class="pe-4 py-3 text-end">
+              <div class="d-flex justify-content-end gap-2">
                 <button 
-                  class="action-btn view" 
-                  @click="$router.push(`/official/requests/${request.id}`)"
+                  class="btn btn-sm btn-outline-primary rounded-pill px-3 border-0 bg-light" 
+                  @click="openViewModal(request)"
                 >
-                  <i class="fas fa-eye"></i>
-                  <span class="btn-text">View</span>
+                  <i class="fas fa-eye me-1"></i> View
                 </button>
-                <div class="approval-actions" v-if="request.status === 'pending'">
+                <div v-if="request.status === 'pending'" class="d-flex gap-2">
                   <button
-                    class="action-btn approve"
+                    class="btn btn-sm btn-success rounded-pill px-3"
                     @click="updateRequestStatus(request.id, 'approved')"
                     :disabled="isUpdating"
                   >
-                    <i class="fas fa-check"></i>
-                    <span class="btn-text">Approve</span>
+                    <i class="fas fa-check me-1"></i> Approve
                   </button>
                   <button
-                    class="action-btn reject"
-                    @click="updateRequestStatus(request.id, 'rejected')"
+                    class="btn btn-sm btn-danger rounded-pill px-3"
+                    @click="triggerRejection(request)"
                     :disabled="isUpdating"
                   >
-                    <i class="fas fa-times"></i>
-                    <span class="btn-text">Reject</span>
+                    <i class="fas fa-times me-1"></i> Reject
                   </button>
                 </div>
                 <button
-                  class="action-btn print"
+                  class="btn btn-sm btn-info text-white rounded-pill px-3"
                   @click="generateDocument(request)"
                   v-else-if="request.status === 'approved'"
                 >
-                  <i class="fas fa-print"></i>
-                  <span class="btn-text">Print</span>
+                  <i class="fas fa-print me-1"></i> Print
                 </button>
-                <div class="status-indicator" v-else>
-                  <span class="status-text">Action taken</span>
-                </div>
               </div>
             </td>
           </tr>
@@ -125,133 +184,178 @@
 
     <!-- Request Details Modal -->
     <div class="modal" :class="{ show: showViewModal }" v-if="showViewModal">
-      <div class="modal-content">
+      <div class="modal-content premium-modal">
         <div class="modal-header">
-          <h3>Request Details</h3>
+          <div class="header-main">
+            <div class="header-icon">
+              <i class="fas fa-file-invoice"></i>
+            </div>
+            <div class="header-titles">
+              <h3>Request Details</h3>
+              <p class="request-id-subtitle">Ref: {{ selectedRequest.id || selectedRequest.documentId || 'N/A' }}</p>
+            </div>
+          </div>
           <button class="close-btn" @click="closeViewModal" :disabled="isUpdating">×</button>
         </div>
-        <div class="modal-body" v-if="selectedRequest">
+        <div class="modal-body custom-scroll" v-if="selectedRequest">
           <div v-if="modalError" class="error-message">
             <p>{{ modalError }}</p>
           </div>
           
-          <div class="detail-grid">
-            <!-- Basic Information Section -->
-            <div class="section-header">
-              <i class="fas fa-user"></i>
-              <h4>Resident Information</h4>
-            </div>
-            
-            <div class="detail-item">
-              <label>Request ID:</label>
-              <div class="detail-value highlight">{{ selectedRequest.id || selectedRequest.documentId || 'N/A' }}</div>
-            </div>
-            
-            <div class="detail-item">
-              <label>Resident Name:</label>
-              <div class="detail-value">{{ selectedRequest.userName }}</div>
-            </div>
-            
-            <div class="detail-item">
-              <label>Contact:</label>
-              <div class="detail-value">{{ selectedRequest.contact || 'N/A' }}</div>
-            </div>
-            
-            <div class="detail-item full-width">
-              <label>Address:</label>
-              <div class="detail-value">{{ selectedRequest.address || 'N/A' }}</div>
-            </div>
-
-            <!-- Document Information Section -->
-            <div class="section-header">
-              <i class="fas fa-file-alt"></i>
-              <h4>Document Information</h4>
-            </div>
-            
-            <div class="detail-item">
-              <label>Document Type:</label>
-              <div class="detail-value">
-                <span class="document-type-badge">
-                  <i :class="documentTypeIcons[selectedRequest.type || selectedRequest.documentType]"></i>
-                  {{ getDocumentTypeLabel(selectedRequest.type || selectedRequest.documentType) }}
-                </span>
+          <div class="detail-container">
+            <!-- Resident Information Section -->
+            <div class="detail-section resident-section">
+              <div class="section-badge"><i class="fas fa-user-circle"></i> Resident Information</div>
+              <div class="section-grid">
+                <div class="detail-block">
+                  <span class="label">Resident Name</span>
+                  <span class="value semi-bold">{{ selectedRequest.userName }}</span>
+                </div>
+                <div class="detail-block">
+                  <span class="label">Contact Number</span>
+                  <span class="value">{{ selectedRequest.contact || 'N/A' }}</span>
+                </div>
+                <div class="detail-block full">
+                  <span class="label">Home Address</span>
+                  <span class="value">{{ selectedRequest.address || 'N/A' }}</span>
+                </div>
               </div>
             </div>
-            
-            <div class="detail-item full-width">
-              <label>Purpose:</label>
-              <div class="purpose-text">{{ selectedRequest.purpose || 'N/A' }}</div>
-            </div>
-            
-            <div class="detail-item">
-              <label>Date Requested:</label>
-              <div class="detail-value">{{ formatDate(selectedRequest.createdAt) }}</div>
-            </div>
-            
-            <div class="detail-item">
-              <label>Status:</label>
-              <div>
-                <span :class="`status-badge large ${selectedRequest.status}`">
-                  <i :class="statusIcons[selectedRequest.status]"></i>
-                  {{ selectedRequest.status }}
-                </span>
+
+            <!-- Document Details Section -->
+            <div class="detail-section document-section">
+              <div class="section-badge"><i class="fas fa-certificate"></i> Document Information</div>
+              <div class="section-grid">
+                <div class="detail-block">
+                  <span class="label">Document Type</span>
+                  <div class="value">
+                    <span class="premium-doc-badge">
+                      <i :class="documentTypeIcons[selectedRequest.type || selectedRequest.documentType]"></i>
+                      {{ getDocumentTypeLabel(selectedRequest.type || selectedRequest.documentType) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="detail-block">
+                  <span class="label">Submission Date</span>
+                  <span class="value">{{ formatDate(selectedRequest.createdAt) }}</span>
+                </div>
+                <div class="detail-block full">
+                  <span class="label">Purpose of Request</span>
+                  <div class="purpose-container">
+                     {{ selectedRequest.purpose || 'Not specified' }}
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Business Information (Conditional) -->
-            <div v-if="selectedRequest.businessName || selectedRequest.businessAddress" class="section-header">
-              <i class="fas fa-building"></i>
-              <h4>Business Information</h4>
-            </div>
-            
-            <div v-if="selectedRequest.businessName" class="detail-item">
-              <label>Business Name:</label>
-              <div class="detail-value">{{ selectedRequest.businessName }}</div>
-            </div>
-            
-            <div v-if="selectedRequest.businessAddress" class="detail-item full-width">
-              <label>Business Address:</label>
-              <div class="detail-value">{{ selectedRequest.businessAddress }}</div>
+            <div v-if="selectedRequest.businessName || selectedRequest.businessAddress" class="detail-section business-section">
+              <div class="section-badge"><i class="fas fa-store"></i> Business Context</div>
+              <div class="section-grid">
+                <div v-if="selectedRequest.businessName" class="detail-block">
+                  <span class="label">Business Name</span>
+                  <span class="value semi-bold">{{ selectedRequest.businessName }}</span>
+                </div>
+                <div v-if="selectedRequest.businessAddress" class="detail-block full">
+                  <span class="label">Business Address</span>
+                  <span class="value">{{ selectedRequest.businessAddress }}</span>
+                </div>
+              </div>
             </div>
 
             <!-- Additional Notes -->
-            <div v-if="selectedRequest.notes" class="section-header">
-              <i class="fas fa-sticky-note"></i>
-              <h4>Additional Notes</h4>
+            <div v-if="selectedRequest.notes" class="detail-section notes-section">
+              <div class="section-badge"><i class="fas fa-comment-alt"></i> Resident's Notes</div>
+              <div class="notes-container">
+                {{ selectedRequest.notes }}
+              </div>
             </div>
-            
-            <div v-if="selectedRequest.notes" class="detail-item full-width">
-              <div class="notes-text">{{ selectedRequest.notes }}</div>
+
+            <!-- Current Status & Actions -->
+            <div class="detail-section status-section actions-integrated">
+              <div class="section-badge"><i class="fas fa-tasks"></i> Status & Actions</div>
+              <div class="status-and-action-container">
+                <div class="status-display">
+                  <span :class="['status-pill-large', selectedRequest.status]">
+                    <i :class="statusIcons[selectedRequest.status]"></i>
+                    {{ selectedRequest.status.toUpperCase() }}
+                  </span>
+                  <span v-if="selectedRequest.status === 'rejected' && selectedRequest.rejectionMessage" class="rejection-history">
+                     Reason: {{ selectedRequest.rejectionMessage }}
+                  </span>
+                </div>
+
+                <!-- Integrate Action Buttons Directly in Container -->
+                <div v-if="selectedRequest.status === 'pending' && !isRejecting" class="integrated-actions">
+                  <button
+                    class="btn-action approve"
+                    @click="handleStatusUpdate('approved')"
+                    :disabled="isUpdating"
+                  >
+                    <i class="fas fa-check"></i> Approve Request
+                  </button>
+                  <button
+                    class="btn-action reject"
+                    @click="handleStatusUpdate('rejected')"
+                    :disabled="isUpdating"
+                  >
+                    <i class="fas fa-times"></i> Reject Request
+                  </button>
+                </div>
+              </div>
             </div>
+
+            <!-- Rejection Reason Input -->
+            <transition name="fade-slide">
+              <div v-if="isRejecting" class="rejection-form-container">
+                <div class="form-header">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  <span>Provide a reason for rejection</span>
+                </div>
+                <textarea 
+                  v-model="rejectionMessage" 
+                  class="rejection-textarea" 
+                  placeholder="Explain why this request is being rejected..."
+                  autofocus
+                ></textarea>
+                <div class="rejection-hint">
+                  <i class="fas fa-info-circle"></i> This message will be visible to the resident.
+                </div>
+              </div>
+            </transition>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer premium-footer">
           <div class="footer-actions">
+            <!-- Printing still in footer for clarity -->
             <button
-              class="action-btn approve"
-              @click="handleStatusUpdate('approved')"
-              v-if="selectedRequest && selectedRequest.status === 'pending'"
-              :disabled="isUpdating"
-            >
-              <i class="fas fa-check"></i> Approve Request
-            </button>
-            <button
-              class="action-btn reject"
-              @click="handleStatusUpdate('rejected')"
-              v-if="selectedRequest && selectedRequest.status === 'pending'"
-              :disabled="isUpdating"
-            >
-              <i class="fas fa-times"></i> Reject Request
-            </button>
-            <button
-              class="action-btn print"
+              class="btn-premium btn-print"
               @click="generateDocument(selectedRequest)"
               v-if="selectedRequest && selectedRequest.status === 'approved'"
             >
               <i class="fas fa-print"></i> Generate Document
             </button>
-            <button class="action-btn close" @click="closeViewModal" :disabled="isUpdating">
-              <i class="fas fa-times"></i> Close
+            
+            <!-- Rejection Actions -->
+            <template v-if="isRejecting">
+               <button
+                class="btn-premium btn-confirm-reject"
+                @click="handleStatusUpdate('rejected')"
+                :disabled="isUpdating || !rejectionMessage.trim()"
+              >
+                <i class="fas fa-times-circle"></i> Confirm Rejection
+              </button>
+              <button
+                class="btn-premium btn-cancel"
+                @click="isRejecting = false"
+                :disabled="isUpdating"
+              >
+                Cancel
+              </button>
+            </template>
+
+            <button class="btn-premium btn-close" @click="closeViewModal" :disabled="isUpdating">
+              Close
             </button>
           </div>
         </div>
@@ -322,6 +426,8 @@ export default {
     const showViewModal = ref(false);
     const showPrintableDocument = ref(false);
     const currentDocumentData = ref(null);
+    const isRejecting = ref(false);
+    const rejectionMessage = ref('');
     
     // Toast notification
     const showToast = ref(false);
@@ -492,7 +598,7 @@ export default {
       }
     };
 
-    const updateRequestStatus = async (requestId, status) => {
+    const updateRequestStatus = async (requestId, status, message = '') => {
       if (!user.value) {
         showToastNotification(
           'You must be logged in to perform this action.',
@@ -510,6 +616,9 @@ export default {
           const reqIndex = (dbData.requests || []).findIndex(r => r.id === requestId);
           if (reqIndex !== -1) {
             dbData.requests[reqIndex].status = status;
+            if (status === 'rejected' && message) {
+              dbData.requests[reqIndex].rejectionMessage = message;
+            }
             dbData.requests[reqIndex].updatedAt = new Date().toISOString();
             dbData.requests[reqIndex].updatedBy = user.value?.id || user.value?.uid || 'staff';
             localDb.writeDb(dbData);
@@ -549,11 +658,17 @@ export default {
         }
         
         // Update the document
-        await updateDoc(requestRef, {
+        const updateData = {
           status: status,
           updatedAt: new Date(),
           updatedBy: user.value.uid,
-        });
+        };
+
+        if (status === 'rejected' && message) {
+          updateData.rejectionMessage = message;
+        }
+
+        await updateDoc(requestRef, updateData);
 
         showToastNotification(
           status === 'approved' ? 'Request approved!' : 'Request rejected!',
@@ -579,9 +694,23 @@ export default {
     };
 
     const handleStatusUpdate = async (status) => {
-      if (selectedRequest.value) {
-        await updateRequestStatus(selectedRequest.value.id, status);
+      if (!selectedRequest.value) return;
+
+      if (status === 'rejected' && !isRejecting.value) {
+        isRejecting.value = true;
+        return;
       }
+
+      if (status === 'rejected' && !rejectionMessage.value.trim()) {
+        showToastNotification('Please provide a reason for rejection.', 'fas fa-exclamation-circle', true);
+        return;
+      }
+
+      await updateRequestStatus(selectedRequest.value.id, status, rejectionMessage.value);
+      
+      // Reset rejection state
+      isRejecting.value = false;
+      rejectionMessage.value = '';
     };
 
     const generateDocument = (request) => {
@@ -617,6 +746,16 @@ export default {
       selectedRequest.value = request;
       showViewModal.value = true;
       modalError.value = null;
+      isRejecting.value = false;
+      rejectionMessage.value = '';
+    };
+
+    const triggerRejection = (request) => {
+      selectedRequest.value = request;
+      showViewModal.value = true;
+      modalError.value = null;
+      isRejecting.value = true;
+      rejectionMessage.value = '';
     };
 
     const closeViewModal = () => {
@@ -640,8 +779,19 @@ export default {
     const formatDate = (timestamp) => {
       if (!timestamp) return 'N/A';
       try {
-        return format(timestamp.toDate ? timestamp.toDate() : timestamp, 'MMM dd, yyyy hh:mm a');
-      } catch {
+        let date;
+        if (timestamp.toDate) {
+          date = timestamp.toDate();
+        } else if (typeof timestamp === 'string') {
+          date = new Date(timestamp);
+        } else if (timestamp instanceof Date) {
+          date = timestamp;
+        } else {
+          date = new Date(timestamp);
+        }
+        return format(date, 'MMM dd, yyyy hh:mm a');
+      } catch (err) {
+        console.error('Format date error:', err);
         return 'Invalid Date';
       }
     };
@@ -738,6 +888,7 @@ export default {
       updateRequestStatus,
       handleStatusUpdate,
       openViewModal,
+      triggerRejection,
       closeViewModal,
       filterByStatus,
       filterRequests,
@@ -747,631 +898,584 @@ export default {
       generateDocument,
       closePrintableDocument
     };
-  },
+  }
 };
 </script>
 
 <style scoped>
 .manage-requests {
-  padding: 2rem;
-  max-width: 1200px;
+  padding: 2.5rem;
+  max-width: 1400px;
   margin: 0 auto;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.header {
-  margin-bottom: 2rem;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  color: #1e293b;
+  min-height: 100vh;
 }
 
 .header h2 {
-  font-weight: 600;
-  color: #2c3e50;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  font-size: 2.25rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 2.5rem;
+  letter-spacing: -0.025em;
 }
 
-.error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.loading {
-  text-align: center;
-  font-size: 1.2rem;
-  color: #7f8c8d;
-  margin: 2rem 0;
-}
-
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
+/* Dashboard Controls */
+.dashboard-controls {
   background: white;
-  border-radius: 10px;
   padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card.active {
-  border: 2px solid #3498db;
-}
-
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-icon {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  font-size: 1.5rem;
-  opacity: 0.2;
-}
-
-.filters {
-  display: flex;
-  gap: 1rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   margin-bottom: 2rem;
-  align-items: center;
+  border: 1px solid #f1f5f9;
 }
 
-.search-box {
-  flex: 1;
+.search-and-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .search-and-filter {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.search-wrapper {
   position: relative;
+  flex: 1;
+  max-width: 500px;
 }
 
-.search-box input {
+.search-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.professional-input {
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.3s;
+  padding: 0.875rem 1rem 0.875rem 3rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.9375rem;
+  color: #1e293b;
+  transition: all 0.2s;
 }
 
-.search-box input:focus {
+.professional-input:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
-.search-box i {
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.custom-select-wrapper {
+  position: relative;
+  min-width: 220px;
+}
+
+.select-icon {
   position: absolute;
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #7f8c8d;
+  color: #64748b;
+  font-size: 0.875rem;
+  pointer-events: none;
 }
 
-.form-select {
-  width: 250px;
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  background-color: white;
-  transition: border-color 0.3s;
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: #3498db;
-}
-
-.requests-table {
-  background: white;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  margin-bottom: 2rem;
-  overflow-x: auto;
-}
-
-table {
+.professional-select {
   width: 100%;
-  border-collapse: collapse;
-  min-width: 800px;
-}
-
-th,
-td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-th {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #2c3e50;
-  position: sticky;
-  top: 0;
-}
-
-.status-badge {
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-transform: capitalize;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.status-badge.large {
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
-}
-
-.status-badge.pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status-badge.approved {
-  background: #d4edda;
-  color: #155724;
-}
-
-.status-badge.rejected {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.approval-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.status-indicator {
-  font-size: 0.8rem;
-  color: #7f8c8d;
-}
-
-.action-btn {
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: none;
-  font-size: 0.9rem;
-  font-weight: 500;
+  padding: 0.875rem 1rem 0.875rem 2.5rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.9375rem;
+  color: #1e293b;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  appearance: none;
 }
 
-.action-btn i {
-  font-size: 0.9rem;
+.status-tabs {
+  background: #f1f5f9;
+  padding: 0.375rem;
+  border-radius: 14px;
+  display: flex;
+  gap: 0.25rem;
 }
 
-.action-btn .btn-text {
-  display: inline-block;
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-.action-btn.view {
-  background: #e2e3e5;
-  color: #383d41;
-}
-
-.action-btn.view:hover:not(:disabled) {
-  background: #d6d8db;
-}
-
-.action-btn.approve {
-  background: #28a745;
-  color: white;
-}
-
-.action-btn.approve:hover:not(:disabled) {
-  background: #218838;
-  transform: translateY(-1px);
-}
-
-.action-btn.reject {
-  background: #dc3545;
-  color: white;
-}
-
-.action-btn.reject:hover:not(:disabled) {
-  background: #c82333;
-  transform: translateY(-1px);
-}
-
-.action-btn.close {
-  background: #6c757d;
-  color: white;
-}
-
-.action-btn.close:hover:not(:disabled) {
-  background: #5a6268;
-}
-
-.action-btn.print {
-  background: #17a2b8;
-  color: white;
-}
-
-.action-btn.print:hover:not(:disabled) {
-  background: #138496;
-  transform: translateY(-1px);
-}
-
-.empty-state {
-  padding: 3rem;
-  text-align: center;
-  background: white;
+.status-tab {
+  padding: 0.5rem 1.25rem;
   border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.empty-state i {
-  font-size: 3rem;
-  color: #bdc3c7;
-  margin-bottom: 1rem;
+.status-tab:hover {
+  color: #1e293b;
 }
 
-.empty-state p {
-  color: #7f8c8d;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+.status-tab.active {
+  background: white;
+  color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.empty-state .subtext {
-  font-size: 0.9rem;
+/* Stats Section */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.75rem;
 }
 
-/* === IMPROVED MODAL STYLES === */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+.stat-glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  padding: 1.75rem;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.stat-glass-card:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.stat-glass-card.active {
+  background: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.stat-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s;
-  padding: 1rem;
-}
-
-.modal.show {
-  opacity: 1;
-  pointer-events: all;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  transform: translateY(-20px);
-  transition: transform 0.3s;
-}
-
-.modal.show .modal-content {
-  transform: translateY(0);
-}
-
-.modal-header {
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e9ecef;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 12px 12px 0 0;
-}
-
-.modal-header h3 {
-  margin: 0;
   font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.pending .stat-icon-wrapper { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #b45309; }
+.approved .stat-icon-wrapper { background: linear-gradient(135deg, #f0fdf4, #dcfce7); color: #15803d; }
+.rejected .stat-icon-wrapper { background: linear-gradient(135deg, #fef2f2, #fee2e2); color: #b91c1c; }
+.total .stat-icon-wrapper { background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #1d4ed8; }
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  color: #0f172a;
+}
+
+.stat-label {
+  font-size: 0.9375rem;
+  color: #64748b;
   font-weight: 600;
 }
 
-.close-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
+/* Base Modal Container */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modal.show {
+  display: flex !important;
+}
+
+/* Premium Modal Content */
+.premium-modal {
+  width: 100%;
+  max-width: 850px;
+  max-height: 90vh;
+  border-radius: 28px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalTransition 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalTransition {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 1.75rem 2.5rem;
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.header-icon {
+  width: 44px;
+  height: 44px;
+  background: #3b82f6;
   color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
+}
+
+.header-titles h3 {
+  font-family: 'Outfit';
+  font-size: 1.375rem;
+  margin: 0;
+  color: #0f172a;
+}
+
+.request-id-subtitle {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0.125rem 0 0;
+  font-family: 'Inter';
+  letter-spacing: 0.02em;
+}
+
+.close-btn {
+  background: #f1f5f9;
+  border: none;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
 }
 
-.close-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.3);
+.close-btn:hover {
+  background: #e2e8f0;
+  color: #ef4444;
 }
 
-.close-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
 }
 
-.modal-body {
-  padding: 2rem;
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
 }
 
-/* Detail Grid Layout */
-.detail-grid {
+.detail-container {
+  padding: 1.5rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.detail-section {
+  position: relative;
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: #f1f5f9;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-block.full {
+  grid-column: 1 / -1;
+}
+
+.detail-block .label {
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.detail-block .value {
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.value.semi-bold {
+  font-weight: 600;
+}
+
+.premium-doc-badge {
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 0.375rem 0.875rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #dbeafe;
+}
+
+.purpose-container, .notes-container {
+  background: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 16px;
+  color: #334155;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  border: 1px solid #f1f5f9;
+}
+
+.notes-container {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fef3c7;
+}
+
+/* Integrated Actions Section */
+.status-and-action-container {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1.5px dashed #e2e8f0;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.section-header {
+@media (min-width: 640px) {
+  .status-and-action-container {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.status-display {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #e9ecef;
-}
-
-.section-header i {
-  color: #667eea;
-  font-size: 1.2rem;
-}
-
-.section-header h4 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.detail-item.full-width {
-  grid-column: 1 / -1;
-}
-
-.detail-item label {
-  font-weight: 600;
-  color: #6c757d;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.detail-value {
-  color: #2c3e50;
-  font-size: 1rem;
-  word-break: break-word;
-}
-
-.detail-value.highlight {
-  font-weight: 600;
-  color: #667eea;
-  font-size: 1.1rem;
-}
-
-.purpose-text {
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.5;
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid #28a745;
-  font-size: 1rem;
-}
-
-.notes-text {
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.5;
-  background: #fff3cd;
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid #ffc107;
-  font-size: 1rem;
-  color: #856404;
-}
-
-.document-type-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  background: #e9ecef;
-  color: #495057;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.modal-footer {
-  padding: 1.5rem 2rem;
-  border-top: 1px solid #e9ecef;
-  background: #f8f9fa;
-  border-radius: 0 0 12px 12px;
-}
-
-.footer-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
+  gap: 1.25rem;
   flex-wrap: wrap;
 }
 
-.footer-actions .action-btn {
-  min-width: 140px;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
+.status-pill-large {
+  padding: 0.625rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.8125rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  letter-spacing: 0.02em;
 }
 
-/* Printable Document Modal */
-.printable-modal {
-  max-width: 900px;
+.status-pill-large.pending { background: #fee2e2; color: #991b1b; }
+.status-pill-large.approved { background: #dcfce7; color: #166534; }
+.status-pill-large.rejected { background: #f1f5f9; color: #475569; }
+
+.rejection-history {
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 0.625rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #fee2e2;
 }
 
-/* Toast Notification */
-.toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #28a745;
+.integrated-actions {
+  display: flex;
+  gap: 0.875rem;
+}
+
+.btn-action {
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-action.approve {
+  background: #16a34a;
   color: white;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-action.approve:hover {
+  background: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.3);
+}
+
+.btn-action.reject {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-action.reject:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
+}
+
+/* Rejection Form */
+.rejection-form-container {
+  background: #fff5f5;
+  border: 2px solid #feb2b2;
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.form-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  transform: translateY(100px);
-  opacity: 0;
-  transition: all 0.3s ease;
-  z-index: 1100;
+  color: #c53030;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
 }
 
-.toast.show {
-  transform: translateY(0);
-  opacity: 1;
+.rejection-textarea {
+  width: 100%;
+  height: 120px;
+  background: white;
+  border: 1.5px solid #fed7d7;
+  border-radius: 14px;
+  padding: 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9375rem;
+  color: #2d3748;
+  resize: none;
+  transition: all 0.2s;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.toast.error {
-  background: #dc3545;
+.rejection-textarea:focus {
+  outline: none;
+  border-color: #f56565;
+  box-shadow: 0 0 0 4px rgba(245, 101, 101, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.toast-content {
-  display: flex;
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(90vh - 150px);
+}
+
+/* Premium Footer */
+.premium-footer {
+  background: #f8fafc;
+  padding: 1.5rem 2.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-premium {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
 }
 
-.toast i {
-  font-size: 1.2rem;
+.btn-confirm-reject { background: #b91c1c; color: white; }
+.btn-cancel { background: #e2e8f0; color: #475569; }
+.btn-print { background: #3b82f6; color: white; }
+.btn-close { background: #f1f5f9; color: #64748b; margin-left: auto; }
+
+/* Table Improvements */
+.requests-table-container {
+  background: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .filters {
-    flex-direction: column;
-  }
+.badge-pending { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
+.badge-approved { background: #f0fdf4; color: #166534; border: 1px solid #dcfce7; }
+.badge-rejected { background: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; }
 
-  .form-select {
-    width: 100%;
-  }
-
-  .stats-cards {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .approval-actions {
-    margin-top: 0.5rem;
-  }
-
-  .modal-content {
-    width: 95%;
-    margin: 0 auto;
-  }
-
-  .modal-header {
-    padding: 1.25rem 1.5rem;
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  .modal-footer {
-    padding: 1.25rem 1.5rem;
-  }
-
-  .footer-actions {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .footer-actions .action-btn {
-    min-width: 100%;
-    justify-content: center;
-  }
-
-  .detail-grid {
-    gap: 1rem;
-  }
-
-  .section-header {
-    margin-bottom: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .manage-requests {
-    padding: 1rem;
-  }
-
-  .stats-cards {
+@media (max-width: 640px) {
+  .section-grid {
     grid-template-columns: 1fr;
-  }
-
-  .modal {
-    padding: 0.5rem;
   }
 }
 </style>

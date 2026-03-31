@@ -156,11 +156,12 @@ export default {
           id: this.requestId,
           userId: this.currentUser?.uid || this.currentUser?.id,
           userName: this.currentUser?.displayName || this.currentUser?.profile?.name || (this.currentUser?.email ? this.currentUser.email.split('@')[0] : 'Resident'),
+          type: this.request.type === 'other' ? this.request.otherType : this.request.type,
           documentType: this.request.type === 'other' ? this.request.otherType : this.request.type,
           purpose: this.request.purpose,
           notes: this.request.notes || 'None',
           status: 'pending',
-          createdAt: new Date().toISOString(), // Use simple ISO instead of firestore timestamp for local compatibility
+          createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           isActive: true
         }

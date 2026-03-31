@@ -20,45 +20,56 @@
     </div>
 
     <!-- Residents Table -->
-    <div class="table-responsive rounded-3 shadow-sm mb-4">
+    <div class="table-responsive rounded-4 shadow-sm border border-light overflow-hidden mb-4 bg-white">
       <table class="table table-hover align-middle mb-0">
-        <thead class="bg-light">
+        <thead class="bg-light text-muted small text-uppercase fw-bold">
           <tr>
-            <th class="fw-semibold text-muted small py-3 ps-4">RESIDENT</th>
-            <!-- <th class="fw-semibold text-muted small py-3">SITIO</th> -->
-            <th class="fw-semibold text-muted small py-3">CONTACT</th>
-            <th class="fw-semibold text-muted small py-3">REGISTERED</th>
-             <th class="fw-semibold text-muted small py-3">ACTION</th>
-            <th class="fw-semibold text-muted small py-3 pe-4"></th>
+            <th class="ps-4 py-3">RESIDENT</th>
+            <th class="py-3">CONTACT</th>
+            <th class="py-3 text-center">REGISTERED</th>
+            <th class="py-3 text-center">STATUS</th>
+            <th class="pe-4 py-3 text-end">ACTION</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="resident in paginatedResidents" :key="resident.id" class="border-top">
             <td class="py-3 ps-4">
               <div class="d-flex align-items-center">
-                <div class="bg-light-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                  <i class="fas fa-user text-primary"></i>
+                <div class="avatar-sm bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background: rgba(13, 110, 253, 0.1);">
+                  <i class="fas fa-user"></i>
                 </div>
                 <div>
-                  <div class="fw-semibold">{{ resident.name }}</div>
+                  <div class="fw-bold text-dark">{{ resident.name }}</div>
                   <small class="text-muted">{{ resident.email }}</small>
                 </div>
               </div>
             </td>
-            <!-- <td class="py-3">{{ resident.address }}</td> -->
-            <td class="py-3">{{ resident.contact }}</td>
-            <td class="py-3">{{ formatDate(resident.createdAt) }}</td>
-            <td class="py-3 pe-4">
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button class="btn btn-sm btn-light rounded-pill px-3" @click="viewResident(resident.id)">
-                  <i class="fas fa-eye me-1"></i> View Details
+            <td class="py-3 text-muted">{{ resident.contact }}</td>
+            <td class="py-3 text-center text-muted small">{{ formatDate(resident.createdAt) }}</td>
+            <td class="py-3 text-center">
+              <span v-if="resident.isApproved" class="badge rounded-pill bg-success-soft text-success px-3 py-2">
+                <i class="fas fa-check-circle me-1"></i> Active
+              </span>
+              <span v-else-if="resident.status === 'rejected'" class="badge rounded-pill bg-danger-soft text-danger px-3 py-2">
+                <i class="fas fa-times-circle me-1"></i> Rejected
+              </span>
+              <span v-else class="badge rounded-pill bg-warning-soft text-warning px-3 py-2">
+                <i class="fas fa-clock me-1"></i> Pending
+              </span>
+            </td>
+            <td class="py-3 pe-4 text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-sm btn-light rounded-pill px-3 border" @click="viewResident(resident.id)">
+                  <i class="fas fa-eye me-1 text-primary"></i> Details
                 </button>
-                <button v-if="!resident.isApproved && resident.status !== 'rejected'" class="btn btn-sm btn-success rounded-pill px-3" @click="approveResident(resident.id)">
-                  <i class="fas fa-check me-1"></i> Approve
-                </button>
-                <button v-if="!resident.isApproved && resident.status !== 'rejected'" class="btn btn-sm btn-warning rounded-pill px-3 text-white" @click="rejectResident(resident.id)">
-                  <i class="fas fa-times me-1"></i> Reject
-                </button>
+                <div v-if="!resident.isApproved && resident.status !== 'rejected'" class="d-flex gap-2">
+                  <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" @click="approveResident(resident.id)">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm" @click="rejectResident(resident.id)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
               </div>
             </td>
           </tr>
@@ -299,62 +310,60 @@ export default {
 .manage-residents {
   max-width: 1200px;
   margin: 0 auto;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  color: #2d3748;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #2d3748 0%, #718096 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .table {
   background-color: #fff;
-  border-radius: 8px;
-  overflow: hidden;
+  border-radius: 16px;
 }
 
 .table th {
-  background-color: #f8f9fa;
-  padding: 12px 16px;
-  border-bottom: 2px solid #e9ecef;
+  background-color: #f8fafc;
+  border-bottom: 2px solid #edf2f7;
+  letter-spacing: 0.025em;
 }
 
 .table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e9ecef;
-  vertical-align: middle;
+  border-bottom: 1px solid #edf2f7;
 }
 
-.bg-light-primary {
-  background-color: rgba(13, 110, 253, 0.1) !important;
-}
+.bg-primary-soft { background: rgba(66, 153, 225, 0.1); }
+.bg-success-soft { background: rgba(72, 187, 120, 0.1); }
+.bg-danger-soft { background: rgba(245, 101, 101, 0.1); }
+.bg-warning-soft { background: rgba(237, 137, 54, 0.1); }
 
 .btn-light {
-  background-color: #f8f9fa;
-  transition: all 0.2s ease;
+  background-color: #f8fafc;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-light:hover {
-  background-color: #e9ecef;
-  transform: translateY(-1px);
-}
-
-.pagination {
-  --bs-pagination-padding-x: 0.75rem;
-  --bs-pagination-padding-y: 0.375rem;
-  --bs-pagination-font-size: 0.875rem;
-  margin-bottom: 0;
+  background-color: #edf2f7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .page-link {
-  border-radius: 6px !important;
+  border-radius: 12px !important;
   margin: 0 4px;
-  min-width: 38px;
-  text-align: center;
   border: none;
-  color: #495057;
-  transition: all 0.2s ease;
+  font-weight: 600;
+  color: #4a5568;
 }
 
 .page-item.active .page-link {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+  background: #3182ce;
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
 }
 
 .page-link:hover {

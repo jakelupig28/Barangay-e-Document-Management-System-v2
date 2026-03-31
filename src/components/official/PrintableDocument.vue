@@ -2,20 +2,26 @@
   <div class="printable-document" ref="printableContent">
     <div class="document-header">
       <button class="no-print back-home-btn" @click="$router.push('/official/dashboard')">
-          <i class="fas fa-home"></i> Back to Dashboard
+          <i class="fas fa-arrow-left"></i> Back to Dashboard
       </button>
-      <div class="logo">
-        <img src="@/assets/bis-logo.png" alt="Barangay Logo" class="logo-img" />
+      <div class="header-main-layout">
+        <div class="logo-side left">
+          <img src="@/assets/bis-logo.png" alt="Barangay Logo" class="side-logo" />
+        </div>
+        <div class="header-text-center">
+          <p class="republic-text">REPUBLIC OF THE PHILIPPINES</p>
+          <p class="province-text">PROVINCE OF {{ barangayFullAddress.split(',')[1]?.trim().toUpperCase() || 'MANILA' }}</p>
+          <h1 class="office-text">OFFICE OF THE PUNONG BARANGAY</h1>
+          <h2 class="barangay-display-name">BARANGAY {{ barangayName.toUpperCase() }}</h2>
+          <p class="contact-info">Contact: {{ barangayContact }} | {{ barangayAddress }}</p>
+        </div>
+        <div class="logo-side right">
+          <img src="@/assets/bagongpilipinas.png" alt="PH Seal" class="side-logo-ph" />
+        </div>
       </div>
-      <div class="header-text">
-        <h1>OFFICE OF THE BARANGAY</h1>
-        <h2>{{ barangayName.toUpperCase() }}</h2>
-        <p class="barangay-info">{{ barangayAddress }}</p>
-        <p class="barangay-info">{{ barangayFullAddress }}</p>
-        <p class="barangay-info">Contact: {{ barangayContact }}</p>
-      </div>
-            <div class="logo">
-        <img src="@/assets/bagongpilipinas.png" alt="ph seals" class="logo-img" />
+      <div class="header-separator">
+        <div class="sep-line bold"></div>
+        <div class="sep-line thin"></div>
       </div>
     </div>
 

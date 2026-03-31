@@ -15,48 +15,58 @@
     <!-- Templates Grid -->
     <div class="templates-grid">
       <!-- Default Template Card -->
-      <div class="template-card default">
-        <div class="card-preview">
-          <i class="fas fa-file-alt fa-3x"></i>
-          <span class="preview-badge">System Default</span>
+      <div class="template-provider-card standard" @click="previewTemplate('residency-certificate', 'Standard Certificate')">
+        <div class="template-visual">
+          <div class="mini-doc">
+            <div class="mini-header"></div>
+            <div class="mini-line long"></div>
+            <div class="mini-line medium"></div>
+            <div class="mini-line short"></div>
+            <div class="mini-seal"></div>
+          </div>
+          <span class="preview-tag">System Default</span>
         </div>
-        <div class="card-content">
+        <div class="template-info">
           <h3>Standard Certificate</h3>
           <p>The default cleanup certificate layout provided by the system.</p>
         </div>
-        <div class="card-actions">
-          <button class="btn-outline" @click="editDefaultTemplate">
+        <div class="template-footer">
+          <button class="btn-template-action" @click.stop="editDefaultTemplate">
             <i class="fas fa-edit"></i> Edit Text
           </button>
         </div>
       </div>
 
       <!-- User Custom Templates -->
-      <div v-for="template in templates" :key="template.id" class="template-card">
-        <div class="card-preview" :style="{ backgroundImage: `url(${template.previewUrl || ''})` }">
-          <div v-if="!template.previewUrl" class="placeholder-preview">
-            <i class="fas fa-file-invoice"></i>
+      <div v-for="template in templates" :key="template.id" class="template-provider-card" @click="previewTemplate(template.type || 'residency-certificate', template.name)">
+        <div class="template-visual">
+          <div class="mini-doc custom">
+            <div class="mini-header"></div>
+            <div class="mini-line long"></div>
+            <div class="mini-line long"></div>
+            <div class="mini-line medium"></div>
+            <div class="mini-seal"></div>
           </div>
         </div>
-        <div class="card-content">
+        <div class="template-info">
           <h3>{{ template.name }}</h3>
           <p>{{ template.description || 'Custom customized template' }}</p>
         </div>
-        <div class="card-actions">
-          <button class="btn-outline" @click="editTemplate(template)">
+        <div class="template-footer">
+          <button class="btn-template-action" @click.stop="editTemplate(template)">
              <i class="fas fa-pen"></i> Edit
           </button>
-          <button class="btn-danger-outline" @click="deleteTemplate(template.id)">
+          <button class="btn-template-danger" @click.stop="deleteTemplate(template.id)">
              <i class="fas fa-trash"></i>
           </button>
         </div>
       </div>
 
       <!-- Import Card -->
-      <div class="template-card import" @click="triggerImport">
-        <div class="import-content">
-          <div class="icon-circle">
-            <i class="fas fa-file-import"></i>
+      <div class="template-import-card" @click="triggerImport">
+        <div class="import-dashed-area">
+          <div class="import-icon">
+            <i class="fas fa-cloud-arrow-up"></i>
           </div>
           <h3>Import Template</h3>
           <p>Upload a ready-made template (JSON/HTML)</p>
@@ -67,6 +77,66 @@
             accept=".json,.html" 
             @change="handleImport"
           />
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div v-if="showPreview" class="preview-overlay" @click.self="closePreview">
+      <div class="preview-modal-container">
+        <div class="preview-modal-header">
+          <div class="preview-title">
+            <i class="fas fa-magnifying-glass"></i>
+            <span>{{ previewData.templateName }} Preview</span>
+          </div>
+          <button class="preview-close-btn" @click="closePreview">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="preview-modal-body custom-scroll">
+          <div class="certificate-preview-paper">
+            <!-- Mock Certificate Content -->
+            <div class="cert-header">
+               <div class="cert-logo">LOGO</div>
+               <div class="cert-header-text">
+                  <div class="cert-line-b">REPUBLIC OF THE PHILIPPINES</div>
+                  <div class="cert-line-b">CITY OF MANILA</div>
+                  <div class="cert-line-b">BARANGAY 123, DISTRICT IV</div>
+               </div>
+               <div class="cert-logo">SEAL</div>
+            </div>
+            
+            <div class="cert-title">CERTIFICATE OF RESIDENCY</div>
+            
+            <div class="cert-body">
+               <p class="cert-to-whom">TO WHOM IT MAY CONCERN:</p>
+               <p class="cert-main-text">
+                 This is to certify that <strong>DEMO RESIDENT NAME</strong>, of legal age, is a bona fide resident of <strong>BARANGAY 123</strong>.
+               </p>
+               <p class="cert-main-text">
+                 This certification is issued upon the request of the above-named person for <strong>LOCAL EMPLOYMENT</strong> purposes.
+               </p>
+               <p class="cert-main-text">
+                 Issued this <strong>31st</strong> day of <strong>March</strong>, <strong>2026</strong> at Barangay 123, District IV, City of Manila.
+               </p>
+            </div>
+            
+            <div class="cert-signatures">
+               <div class="cert-seal-place">OFFICIAL SEAL</div>
+               <div class="cert-captain">
+                  <div class="cert-name">HON. JUAN DELA CRUZ</div>
+                  <div class="cert-title-sub">Barangay Captain</div>
+               </div>
+            </div>
+          </div>
+        </div>
+        <div class="preview-modal-footer">
+          <button class="btn-use-template" @click="editTemplateFromPreview">
+            <i class="fas fa-pen-to-square"></i> Edit template
+          </button>
+          <button class="btn-close-preview" @click="closePreview">
+            Close Preview
+          </button>
         </div>
       </div>
     </div>
@@ -116,14 +186,35 @@ export default {
   setup() {
     const templates = ref([
       // Example initial data
-      { id: 1, name: 'Modern Minimal', description: 'Clean layout with blue accents', body: 'This is to certify that...' },
-      { id: 2, name: 'Traditional Official', description: 'Classic official document style', body: 'OFFICE OF THE PUNONG BARANGAY...' }
+      { id: 1, name: 'Modern Minimal', description: 'Clean layout with blue accents', body: 'This is to certify that...', type: 'residency-certificate' },
+      { id: 2, name: 'Traditional Official', description: 'Classic official document style', body: 'OFFICE OF THE PUNONG BARANGAY...', type: 'barangay-clearance' }
     ]);
     
+    const showPreview = ref(false);
+    const previewData = ref({ templateType: '', templateName: '' });
     const showEditor = ref(false);
     const isEditingDefault = ref(false);
     const currentTemplate = ref({});
     const fileInput = ref(null);
+
+    const previewTemplate = (type, name) => {
+        previewData.value = { templateType: type, templateName: name };
+        showPreview.value = true;
+    };
+
+    const closePreview = () => {
+        showPreview.value = false;
+    };
+
+    const editTemplateFromPreview = () => {
+        const template = templates.value.find(t => t.name === previewData.value.templateName);
+        if (template) {
+            editTemplate(template);
+        } else {
+            editDefaultTemplate();
+        }
+        closePreview();
+    };
 
     const createNewTemplate = () => {
         isEditingDefault.value = false;
@@ -193,6 +284,8 @@ export default {
       currentTemplate,
       isEditingDefault,
       fileInput,
+      showPreview,
+      previewData,
       createNewTemplate,
       editDefaultTemplate,
       editTemplate,
@@ -200,7 +293,10 @@ export default {
       closeEditor,
       saveTemplate,
       triggerImport,
-      handleImport
+      handleImport,
+      previewTemplate,
+      closePreview,
+      editTemplateFromPreview
     }
   }
 }
@@ -208,8 +304,11 @@ export default {
 
 <style scoped>
 .certificate-templates-page {
-  padding: 2rem;
-  background-color: #f8f9fa;
+  padding: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  color: #1e293b;
   min-height: 100vh;
 }
 
@@ -217,203 +316,501 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
 }
 
 .page-header h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #2c3e50;
+  font-size: 2.25rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   margin: 0;
+  letter-spacing: -0.025em;
 }
 
 .subtitle {
-  color: #6c757d;
-  margin-top: 0.25rem;
-  font-size: 0.95rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .action-btn {
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 14px;
+  font-weight: 700;
   cursor: pointer;
   border: none;
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
+  gap: 0.75rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+  background: #2563eb;
   color: white;
-  box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
 }
 
 .action-btn.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(13, 110, 253, 0.3);
+  background: #1d4ed8;
+  box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.3);
 }
 
-/* Grid Layout */
+/* Templates Grid */
 .templates-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
 }
 
-.template-card {
+.template-provider-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-  transition: all 0.3s ease;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  cursor: pointer;
 }
 
-.template-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+.template-provider-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border-color: rgba(37, 99, 235, 0.1);
 }
 
-.card-preview {
-  height: 180px;
-  background-color: #e9ecef;
-  background-size: cover;
-  background-position: center;
+.template-visual {
+  height: 220px;
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  transition: background 0.3s;
 }
 
-.preview-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
+.template-provider-card:hover .template-visual {
+  background: #f1f5f9;
 }
 
-.placeholder-preview {
-    color: #adb5bd;
-    font-size: 3rem;
+.preview-tag {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: #1e293b;
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
 }
 
-.card-content {
+/* Mini Document Visual */
+.mini-doc {
+  width: 130px;
+  height: 160px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 0 1px #e2e8f0;
   padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transform: translateY(0);
+  transition: transform 0.4s;
+}
+
+.template-provider-card:hover .mini-doc {
+  transform: translateY(-5px);
+}
+
+.mini-header {
+  height: 12px;
+  background: #f1f5f9;
+  border-radius: 2px;
+  margin-bottom: 4px;
+}
+
+.mini-line {
+  height: 6px;
+  background: #f8fafc;
+  border-radius: 1px;
+}
+
+.mini-line.long { width: 100%; }
+.mini-line.medium { width: 70%; }
+.mini-line.short { width: 40%; }
+
+.mini-seal {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #2563eb;
+  margin-top: auto;
+  align-self: flex-end;
+  opacity: 0.6;
+}
+
+.template-info {
+  padding: 1.5rem;
   flex-grow: 1;
 }
 
-.card-content h3 {
-  font-size: 1.1rem;
+.template-info h3 {
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #343a40;
+  color: #0f172a;
   margin-bottom: 0.5rem;
 }
 
-.card-content p {
-  font-size: 0.9rem;
-  color: #6c757d;
+.template-info p {
+  font-size: 0.9375rem;
+  color: #64748b;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-.card-actions {
-  padding: 1rem 1.25rem;
-  background-color: #f8f9fa;
-  border-top: 1px solid #e9ecef;
+.template-footer {
+  padding: 1.25rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.btn-outline, .btn-danger-outline {
+.btn-template-action, .btn-template-danger {
   flex: 1;
-  padding: 0.5rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border: 1px solid #dee2e6;
+  padding: 0.625rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border: 1px solid #e2e8f0;
   background: white;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  color: #475569;
 }
 
-.btn-outline:hover {
-  background-color: #e9ecef;
-  color: #0d6efd;
+.btn-template-action:hover {
+  background: #f1f5f9;
+  color: #2563eb;
+  border-color: #dbeafe;
 }
 
-.btn-danger-outline {
-    flex: 0 0 auto;
-    width: 40px;
+.btn-template-danger {
+  flex: 0 0 46px;
+  color: #64748b;
 }
 
-.btn-danger-outline:hover {
-    background-color: #fee2e2;
-    color: #dc3545;
-    border-color: #f5c2c7;
+.btn-template-danger:hover {
+  background: #fef2f2;
+  color: #ef4444;
+  border-color: #fee2e2;
 }
 
-/* Import Card Special Styles */
-.template-card.import {
+/* Import Card */
+.template-import-card {
+  border: 2px dashed #e2e8f0;
+  border-radius: 24px;
   cursor: pointer;
-  border: 2px dashed #dee2e6;
-  background: transparent;
-  box-shadow: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white;
 }
 
-.template-card.import:hover {
-  border-color: #0d6efd;
-  background: rgba(13, 110, 253, 0.02);
-}
-
-.import-content {
-  padding: 2rem;
-  text-align: center;
+.import-dashed-area {
+  padding: 3rem 2rem;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  height: 100%;
+  justify-content: center;
+  text-align: center;
 }
 
-.icon-circle {
-  width: 60px;
-  height: 60px;
-  background-color: #e7f1ff;
-  color: #0d6efd;
+.template-import-card:hover {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.02);
+  transform: translateY(-5px);
+}
+
+.import-icon {
+  width: 64px;
+  height: 64px;
+  background: #eff6ff;
+  color: #2563eb;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Modal Styles */
+/* Preview Modal */
+.preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  padding: 2rem;
+}
+
+.preview-modal-container {
+  background: #f8fafc;
+  border-radius: 32px;
+  width: 100%;
+  max-width: 900px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-modal-header {
+  padding: 1.5rem 2.5rem;
+  background: white;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preview-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #1e293b;
+}
+
+.preview-title i {
+  color: #2563eb;
+}
+
+.preview-close-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-close-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.preview-modal-body {
+  flex: 1;
+  padding: 3rem;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.certificate-preview-paper {
+  width: 100%;
+  max-width: 800px;
+  background: white;
+  min-height: 1000px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  padding: 4rem;
+}
+
+/* Internal Certificate Mock Styles */
+.cert-header {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   border-bottom: 2px solid #1e3a8a;
+   padding-bottom: 2rem;
+   margin-bottom: 3rem;
+}
+
+.cert-logo {
+   width: 80px;
+   height: 80px;
+   background: #f1f5f9;
+   border-radius: 50%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 0.75rem;
+   font-weight: 700;
+   color: #94a3b8;
+}
+
+.cert-header-text {
+   text-align: center;
+}
+
+.cert-line-b {
+   font-weight: 800;
+   font-size: 0.875rem;
+   color: #1e3a8a;
+}
+
+.cert-title {
+   text-align: center;
+   font-size: 1.75rem;
+   font-weight: 900;
+   color: #1e3a8a;
+   text-decoration: underline;
+   margin-bottom: 4rem;
+   letter-spacing: 0.05em;
+}
+
+.cert-body {
+   line-height: 2;
+   font-size: 1.125rem;
+   color: #1e293b;
+   margin-bottom: 5rem;
+}
+
+.cert-to-whom {
+   font-weight: 800;
+   margin-bottom: 2rem;
+}
+
+.cert-main-text {
+   margin-bottom: 1.5rem;
+   text-indent: 3rem;
+}
+
+.cert-signatures {
+   display: flex;
+   justify-content: space-between;
+   align-items: flex-end;
+}
+
+.cert-seal-place {
+   width: 140px;
+   height: 140px;
+   border: 3px solid #1e3a8a;
+   border-radius: 50%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-weight: 800;
+   color: #1e3a8a;
+   opacity: 0.6;
+   transform: rotate(-15deg);
+}
+
+.cert-captain {
+   text-align: center;
+}
+
+.cert-name {
+   font-weight: 800;
+   border-bottom: 1px solid #1e293b;
+   padding-bottom: 0.25rem;
+   margin-bottom: 0.25rem;
+   min-width: 250px;
+}
+
+.cert-title-sub {
+   font-size: 0.875rem;
+   color: #64748b;
+}
+
+.preview-modal-footer {
+  padding: 1.5rem 2.5rem;
+  background: white;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.btn-use-template {
+  background: #2563eb;
+  color: white;
+  padding: 0.75rem 1.75rem;
+  border-radius: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s;
+}
+
+.btn-close-preview {
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 0.75rem 1.75rem;
+  border-radius: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* Custom Scroll */
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+/* Modal Content (Editor) */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.5);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1200;
+}
+
+.modal-content.large {
+  max-width: 800px;
+  background: white;
+  border-radius: 24px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-content {
@@ -426,67 +823,21 @@ export default {
   max-height: 90vh;
 }
 
-.modal-content.large {
-    max-width: 700px;
-}
-
 .modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e9ecef;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #f1f5f9;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.modal-header h2 {
-    font-size: 1.2rem;
-    margin: 0;
-}
+.modal-header h2 { font-weight: 800; font-size: 1.25rem; }
 
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
-    color: #6c757d;
-}
+.modal-body { padding: 2rem; overflow-y: auto; }
 
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-}
-
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-.form-control {
-    width: 100%;
-    padding: 0.6rem;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    font-size: 0.95rem;
-}
-
-.alert-info {
-    background-color: #cff4fc;
-    color: #055160;
-    padding: 1rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    margin-top: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
+.form-group { margin-bottom: 1.5rem; }
+.form-group label { display: block; font-weight: 700; font-size: 0.875rem; margin-bottom: 0.5rem; color: #475569; }
+.form-control { width: 100%; padding: 0.875rem; border-radius: 12px; border: 1.5px solid #e2e8f0; font-family: 'Inter'; font-size: 0.9375rem; }
 .modal-footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid #e9ecef;
@@ -495,20 +846,8 @@ export default {
   gap: 0.75rem;
 }
 
-.btn-secondary {
-    padding: 0.6rem 1.2rem;
-    border: 1px solid #dee2e6;
-    background: white;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.btn-primary {
-    padding: 0.6rem 1.2rem;
-    background: #0d6efd;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
+@media (max-width: 768px) {
+  .preview-modal-container { height: 100vh; border-radius: 0; }
+  .certificate-preview-paper { padding: 2rem; }
 }
 </style>

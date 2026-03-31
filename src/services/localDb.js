@@ -38,6 +38,10 @@ function readDb() {
       users: Array.isArray(parsed.users) ? parsed.users : [],
       residents: Array.isArray(parsed.residents) ? parsed.residents : [],
       staffAccounts: Array.isArray(parsed.staffAccounts) ? parsed.staffAccounts : [],
+      requests: Array.isArray(parsed.requests) ? parsed.requests : [],
+      reports: Array.isArray(parsed.reports) ? parsed.reports : [],
+      notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [],
+      ...parsed
     };
   } catch {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(seedData));

@@ -37,17 +37,22 @@
       </div>
     </div>
     
-    <div class="stats-container">
-      <div class="stat-card" v-for="(stat, index) in statCards" :key="index">
-        <div class="stat-icon" :class="stat.iconClass">
-          <i :class="stat.icon"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ stat.title }}</h3>
-          <p>{{ stat.value }}</p>
-          <span class="stat-trend" v-if="stat.trend">
-            <i :class="stat.trendIcon"></i> {{ stat.trend }}% from last month
-          </span>
+    <div class="stats-grid mb-5">
+      <div class="premium-stat-card blue" v-for="(stat, index) in statCards" :key="index">
+        <div class="card-glass-overlay"></div>
+        <div class="card-content">
+          <div class="stat-icon-box" :class="stat.iconClass">
+            <i :class="stat.icon"></i>
+          </div>
+          <div class="stat-info">
+            <h3 class="stat-title">{{ stat.title }}</h3>
+            <div class="stat-value-row">
+              <span class="stat-value text-dark">{{ stat.value }}</span>
+              <span class="stat-badge" v-if="stat.trend">
+                <i :class="stat.trendIcon"></i> {{ stat.trend }}%
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -159,6 +164,7 @@
 import { db } from '@/firebase/config'
 import { collection, getDocs, query, orderBy, limit, where, onSnapshot } from 'firebase/firestore'
 import RealTimeClock from '@/components/common/RealTimeClock.vue'
+import localDb from '@/services/localDb'
 
 export default {
   components: {
@@ -267,16 +273,32 @@ export default {
       this.setupRealTimeNotifications()
     },
     loadLocalDashboardData() {
-      // Keep the original layout while running in local JSON mode.
-      this.stats.totalResidents = 0
-      this.stats.pendingRequests = 0
-      this.stats.completedRequests = 0
-      this.stats.pendingReports = 0
-      this.stats.resolvedReports = 0
-      this.recentRequests = []
-      this.recentReports = []
-      this.notifications = []
-      this.unreadCount = 0
+      const dbData = localDb.readDb();
+      this.stats.totalResidents = dbData.users?.filter(u => u.role === 'resident').length || 0;
+      this.stats.pendingRequests = dbData.requests?.filter(r => r.status === 'pending').length || 0;
+      this.stats.completedRequests = dbData.requests?.filter(r => r.status === 'approved').length || 0;
+      this.stats.pendingReports = dbData.reports?.filter(r => r.status === 'pending').length || 0;
+      this.stats.resolvedReports = dbData.reports?.filter(r => r.status === 'resolved').length || 0;
+      
+      this.recentRequests = (dbData.requests || []).slice(-5).reverse().map(r => ({
+        id: r.id,
+        userName: r.userName || 'Unknown',
+        type: r.type || r.documentType || 'Unknown',
+        status: r.status || 'pending',
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt
+      }));
+      
+      this.recentReports = (dbData.reports || []).slice(-5).reverse().map(r => ({
+        id: r.id,
+        userName: r.userName || 'Unknown',
+        reportType: r.reportType || 'Unknown',
+        status: r.status || 'pending',
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt
+      }));
+      
+      this.unreadCount = 0;
     },
     async fetchStats() {
       if (!this.isFirebaseReady()) {
@@ -695,60 +717,30 @@ export default {
 </script>
 
 <style scoped>
-.analytics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.chart-card {
-    background: white;
-    border-radius: 8px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e3e6f0;
-}
-
-.chart-card h4 {
-    margin-bottom: 1rem;
-    color: #5a5c69;
-    font-size: 1.1rem;
-    font-weight: 700;
-    text-align: center;
-}
-
-.chart-container {
-    position: relative;
-    height: 300px;
-    width: 100%;
-}
-
 .official-dashboard {
-  padding: 2rem;
-  max-width: 1200px;
+  padding: 2.5rem;
+  max-width: 1400px;
   margin: 0 auto;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #333;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  background: #f8fafc;
+  min-height: 100vh;
 }
 
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .dashboard-header h2 {
-  font-weight: 600;
-  color: #2c3e50;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.dashboard-header h2 i {
-  font-size: 1.5rem;
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e293b 0%, #64748b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.025em;
+  margin: 0;
 }
 
 .header-right {
@@ -757,356 +749,225 @@ export default {
   gap: 1.5rem;
 }
 
-.last-updated {
-  color: #7f8c8d;
-  font-size: 0.9rem;
-}
-
 .notification-container {
   position: relative;
 }
 
 .notification-btn {
-  background: none;
-  border: none;
+  background: white;
+  border: 1px solid #e2e8f0;
   cursor: pointer;
   position: relative;
   padding: 0.5rem;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .notification-btn:hover {
-  background-color: #f0f0f0;
-}
-
-.notification-btn i {
-  font-size: 1.2rem;
-  color: #555;
+  background-color: #f8fafc;
+  transform: translateY(-1px);
 }
 
 .notification-badge {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  background-color: #e74c3c;
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
   color: white;
-  border-radius: 50%;
-  width: 20px;
+  border-radius: 9999px;
+  min-width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  font-weight: bold;
+  font-weight: 700;
+  padding: 0 4px;
+  border: 2px solid white;
 }
 
-.notification-dropdown {
-  position: absolute;
-  right: 0;
-  top: 50px;
-  width: 350px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 100;
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.notification-header {
-  padding: 1rem;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.notification-header h4 {
-  margin: 0;
-  font-size: 1rem;
-  color: #333;
-}
-
-.mark-read-btn {
-  background: none;
-  border: none;
-  color: #3498db;
-  cursor: pointer;
-  font-size: 0.8rem;
-  padding: 0.25rem 0.5rem;
-}
-
-.mark-read-btn:hover {
-  text-decoration: underline;
-}
-
-.notification-list {
-  padding: 0;
-}
-
-.notification-item {
-  padding: 1rem;
-  border-bottom: 1px solid #f5f5f5;
-  display: flex;
-  gap: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.notification-item:hover {
-  background-color: #f9f9f9;
-}
-
-.notification-item.unread {
-  background-color: #f8fafd;
-}
-
-.notification-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #e3f2fd;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1976d2;
-  flex-shrink: 0;
-}
-
-.notification-content {
-  flex-grow: 1;
-}
-
-.notification-message {
-  margin: 0 0 0.25rem 0;
-  color: #333;
-  font-size: 0.9rem;
-}
-
-.notification-time {
-  color: #999;
-  font-size: 0.75rem;
-}
-
-.empty-notifications {
-  padding: 1.5rem;
-  text-align: center;
-  color: #999;
-}
-
-/* Rest of your existing styles... */
-.stats-container {
+/* Premium Stats Grid */
+.stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
 }
 
-.stat-card {
+.premium-stat-card {
+  position: relative;
   background: white;
-  border-radius: 10px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 24px;
+  padding: 1.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.premium-stat-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.card-content {
+  position: relative;
+  z-index: 1;
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
+  flex-direction: column;
 }
 
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+.stat-icon-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  color: white;
+  margin-bottom: 1.25rem;
 }
 
-.bg-blue {
-  background: linear-gradient(135deg, #3498db, #2980b9);
-}
+.bg-blue { background: #eff6ff; color: #2563eb; }
+.bg-orange { background: #fff7ed; color: #ea580c; }
+.bg-yellow { background: #fefce8; color: #ca8a04; }
+.bg-green { background: #f0fdf4; color: #16a34a; }
 
-.bg-orange {
-  background: linear-gradient(135deg, #e67e22, #d35400);
-}
-
-.bg-green {
-  background: linear-gradient(135deg, #2ecc71, #27ae60);
-}
-
-.bg-yellow {
-  background: linear-gradient(135deg, #f39c12, #e67e22);
-}
-
-.stat-content h3 {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #7f8c8d;
+.stat-title {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin-bottom: 0.5rem;
 }
 
-.stat-content p {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 0.25rem;
+.stat-value {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.025em;
 }
 
-.stat-trend {
-  font-size: 0.75rem;
-  color: #95a5a6;
-}
-
-.stat-trend i {
-  margin-right: 0.25rem;
-}
-
+/* Sections */
 .dashboard-section {
   background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  padding: 1.5rem;
+  border-radius: 24px;
+  padding: 2rem;
   margin-bottom: 2rem;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
 }
 
 .section-header h3 {
-  font-weight: 600;
-  color: #2c3e50;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.table-container {
-  overflow-x: auto;
+.section-header h3 i {
+  color: #3b82f6;
 }
 
 .modern-table {
   width: 100%;
-  border-collapse: collapse;
-}
-
-.modern-table thead {
-  background-color: #f8f9fa;
+  border-collapse: separate;
+  border-spacing: 0 0.75rem;
 }
 
 .modern-table th {
   padding: 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: #7f8c8d;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #94a3b8;
+  font-weight: 700;
+  border: none;
+}
+
+.modern-table tbody tr {
+  background: white;
+  transition: all 0.2s;
 }
 
 .modern-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #ecf0f1;
-  font-size: 0.95rem;
+  padding: 1.25rem 1rem;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.925rem;
 }
 
-.modern-table tr:last-child td {
-  border-bottom: none;
+.modern-table td:first-child {
+  border-left: 1px solid #f1f5f9;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
 }
 
-.modern-table tr:hover {
-  background-color: #f8f9fa;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.user-info i {
-  color: #7f8c8d;
-  font-size: 1.1rem;
+.modern-table td:last-child {
+  border-right: 1px solid #f1f5f9;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .status-badge {
-  padding: 0.35rem 0.75rem;
-  border-radius: 50px;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 700;
   text-transform: capitalize;
 }
 
-.status-badge.pending {
-  background-color: #fff3cd;
-  color: #856404;
+.status-badge.pending { background: #fef3c7; color: #92400e; }
+.status-badge.approved { background: #dcfce7; color: #166534; }
+.status-badge.rejected { background: #fee2e2; color: #991b1b; }
+.status-badge.resolved { background: #dcfce7; color: #166534; }
+
+/* Analytics */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
 }
 
-.status-badge.approved {
-  background-color: #d4edda;
-  color: #155724;
+.chart-card {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
 }
 
-.status-badge.processing {
-  background-color: #cce5ff;
-  color: #004085;
+.chart-card h4 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
-.status-badge.rejected {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.status-badge.in-progress {
-  background-color: #cce5ff;
-  color: #004085;
-}
-
-.status-badge.resolved {
-  background-color: #d4edda;
-  color: #155724;
+.chart-container {
+  position: relative;
+  height: 250px;
 }
 
 @media (max-width: 768px) {
+  .official-dashboard {
+    padding: 1.5rem;
+  }
+  
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .header-right {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .stats-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .notification-dropdown {
-    width: 280px;
-    right: -20px;
-  }
-  
-  .modern-table th, 
-  .modern-table td {
-    padding: 0.75rem 0.5rem;
+    gap: 1.5rem;
   }
 }
 </style>

@@ -14,49 +14,77 @@
       <i class="fas fa-spinner fa-spin"></i> Loading reports...
     </div>
 
-    <!-- Stats Cards -->
-    <div v-else class="stats-cards">
-      <div class="stat-card" @click="filterByStatus('pending')" :class="{ active: currentFilter === 'pending' }">
+    <!-- Stats Section -->
+    <div v-else class="stats-grid">
+      <div class="stat-glass-card pending" @click="filterByStatus('pending')" :class="{ active: currentFilter === 'pending' }">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-clock-rotate-left"></i>
+        </div>
         <div class="stat-value">{{ stats.pendingReports }}</div>
-        <div class="stat-label">Pending</div>
-        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-label">Pending Reports</div>
       </div>
-      <div class="stat-card" @click="filterByStatus('in-progress')" :class="{ active: currentFilter === 'in-progress' }">
+      <div class="stat-glass-card in-progress" @click="filterByStatus('in-progress')" :class="{ active: currentFilter === 'in-progress' }">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-screwdriver-wrench"></i>
+        </div>
         <div class="stat-value">{{ stats.inProgressReports }}</div>
         <div class="stat-label">In Progress</div>
-        <div class="stat-icon"><i class="fas fa-tools"></i></div>
       </div>
-      <div class="stat-card" @click="filterByStatus('resolved')" :class="{ active: currentFilter === 'resolved' }">
+      <div class="stat-glass-card resolved" @click="filterByStatus('resolved')" :class="{ active: currentFilter === 'resolved' }">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-circle-check"></i>
+        </div>
         <div class="stat-value">{{ stats.resolvedReports }}</div>
-        <div class="stat-label">Resolved</div>
-        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-label">Resolved Case</div>
       </div>
-      <div class="stat-card" @click="filterByStatus('all')" :class="{ active: currentFilter === 'all' }">
+      <div class="stat-glass-card total" @click="filterByStatus('all')" :class="{ active: currentFilter === 'all' }">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-flag"></i>
+        </div>
         <div class="stat-value">{{ stats.totalReports }}</div>
-        <div class="stat-label">Total</div>
-        <div class="stat-icon"><i class="fas fa-flag"></i></div>
+        <div class="stat-label">Total Reports</div>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div v-if="!isLoading" class="filters">
-      <div class="search-box">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search by title, description, or resident name..."
-          @input="searchReports"
-        >
-        <i class="fas fa-search"></i>
+    <!-- Dashboard Controls -->
+    <div v-if="!isLoading" class="dashboard-controls">
+      <div class="search-and-filter">
+        <div class="search-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            placeholder="Search by title, description, or resident name..."
+            class="professional-input"
+          >
+        </div>
+        <div class="filter-group">
+          <div class="custom-select-wrapper">
+            <i class="fas fa-filter select-icon"></i>
+            <select v-model="reportTypeFilter" class="professional-select">
+              <option value="">All Report Types</option>
+              <option v-for="type in reportTypes" :value="type.value" :key="type.value">{{ type.label }}</option>
+            </select>
+          </div>
+          <div class="custom-select-wrapper">
+            <i class="fas fa-bolt select-icon"></i>
+            <select v-model="urgencyFilter" class="professional-select">
+              <option value="">All Urgency Levels</option>
+              <option v-for="level in urgencyLevels" :value="level.value" :key="level.value">{{ level.label }}</option>
+            </select>
+          </div>
+          <div class="status-tabs">
+            <button 
+              v-for="status in ['all', 'pending', 'in-progress', 'resolved']" 
+              :key="status"
+              :class="['status-tab', { active: currentFilter === status }, status]"
+              @click="currentFilter = status"
+            >
+              {{ status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ') }}
+            </button>
+          </div>
+        </div>
       </div>
-      <select v-model="reportTypeFilter" @change="filterReports" class="form-select">
-        <option value="">All Report Types</option>
-        <option v-for="type in reportTypes" :value="type.value" :key="type.value">{{ type.label }}</option>
-      </select>
-      <select v-model="urgencyFilter" @change="filterReports" class="form-select">
-        <option value="">All Urgency Levels</option>
-        <option v-for="level in urgencyLevels" :value="level.value" :key="level.value">{{ level.label }}</option>
-      </select>
     </div>
 
     <!-- Reports Table -->
@@ -135,12 +163,19 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="!isLoading" class="empty-state">
-      <i class="fas fa-flag"></i>
-      <p>No reports found</p>
-      <p class="subtext" v-if="currentFilter !== 'all' || searchQuery || reportTypeFilter || urgencyFilter">
-        Try changing your filters
-      </p>
+    <div v-else-if="!isLoading" class="empty-state-wrapper">
+      <div class="empty-card">
+        <div class="empty-icon-ring">
+          <i class="fas fa-flag-checkered"></i>
+        </div>
+        <h3>No Reports Found</h3>
+        <p>There are currently no reports that match your selected filters.</p>
+        <div class="empty-actions" v-if="currentFilter !== 'all' || searchQuery || reportTypeFilter || urgencyFilter">
+          <button class="btn-clear" @click="resetFilters">
+            <i class="fas fa-rotate-left"></i> Clear All Filters
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Toast Notification -->
@@ -385,6 +420,13 @@ export default {
     const filterByStatus = (status) => { currentFilter.value = status; };
     const filterReports = () => {};
     const searchReports = () => {};
+    
+    const resetFilters = () => {
+      searchQuery.value = '';
+      reportTypeFilter.value = '';
+      urgencyFilter.value = '';
+      currentFilter.value = 'all';
+    };
 
     const formatDate = (timestamp) => {
       if (!timestamp) return 'N/A';
@@ -477,6 +519,7 @@ export default {
       filterByStatus,
       filterReports,
       searchReports,
+      resetFilters,
       formatDate,
       getReportTypeLabel,
       getUrgencyLabel
@@ -486,298 +529,372 @@ export default {
 </script>
 
 <style scoped>
-/* === Layout === */
 .manage-reports {
-  padding: 2rem;
-  max-width: 1200px;
+  padding: 2.5rem;
+  max-width: 1400px;
   margin: 0 auto;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  color: #1e293b;
+  min-height: 100vh;
 }
 
 .header h2 {
-  font-weight: 600;
-  color: #2c3e50;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  font-size: 2.25rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 2.5rem;
+  letter-spacing: -0.025em;
 }
 
-/* === Messages === */
-.error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.loading {
-  text-align: center;
-  font-size: 1.2rem;
-  color: #7f8c8d;
-  margin: 2rem 0;
-}
-
-/* === Stats Cards === */
-.stats-cards {
+/* Stats Section */
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.75rem;
+  margin-bottom: 2.5rem;
 }
 
-.stat-card {
-  background: white;
-  border-radius: 10px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s;
-  cursor: pointer;
+.stat-glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  padding: 1.75rem;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+.stat-glass-card:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-.stat-card.active {
-  border: 2px solid #3498db;
+.stat-glass-card.active {
+  background: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
+
+.stat-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.pending .stat-icon-wrapper { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #b45309; }
+.in-progress .stat-icon-wrapper { background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #1d4ed8; }
+.resolved .stat-icon-wrapper { background: linear-gradient(135deg, #f0fdf4, #dcfce7); color: #15803d; }
+.total .stat-icon-wrapper { background: linear-gradient(135deg, #f8fafc, #f1f5f9); color: #475569; }
 
 .stat-value {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #2c3e50;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
   margin-bottom: 0.5rem;
+  color: #0f172a;
 }
 
 .stat-label {
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 0.9375rem;
+  color: #64748b;
+  font-weight: 600;
 }
 
-.stat-icon {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  font-size: 1.5rem;
-  opacity: 0.2;
-}
-
-/* === Filters === */
-.filters {
-  display: flex;
-  gap: 1rem;
+/* Dashboard Controls */
+.dashboard-controls {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   margin-bottom: 2rem;
+  border: 1px solid #f1f5f9;
+}
+
+.search-and-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .search-and-filter {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.professional-input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 3rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+}
+
+.professional-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.filter-group {
+  display: flex;
   align-items: center;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
-.search-box {
-  flex: 1;
-  min-width: 250px;
+.custom-select-wrapper {
   position: relative;
+  min-width: 180px;
 }
 
-.search-box input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-
-.search-box input:focus {
-  outline: none;
-  border-color: #3498db;
-}
-
-.search-box i {
+.select-icon {
   position: absolute;
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #7f8c8d;
+  color: #64748b;
+  font-size: 0.875rem;
+  pointer-events: none;
 }
 
-.form-select {
-  width: 220px;
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  background-color: white;
+.professional-select {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 2.5rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.9375rem;
+  appearance: none;
+  cursor: pointer;
 }
 
-.form-select:focus {
-  outline: none;
-  border-color: #3498db;
+.status-tabs {
+  background: #f1f5f9;
+  padding: 0.375rem;
+  border-radius: 14px;
+  display: flex;
+  gap: 0.25rem;
 }
 
-/* === Table === */
+.status-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.status-tab.active {
+  background: white;
+  color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Reports Table */
 .reports-table {
   background: white;
-  border-radius: 10px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  margin-bottom: 2rem;
-  overflow-x: auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
-}
-
-th, td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid #eee;
 }
 
 th {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #2c3e50;
-  position: sticky;
-  top: 0;
+  background: #f8fafc;
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-/* === Badges === */
-.status-badge, .report-type-badge, .urgency-badge {
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-transform: capitalize;
+td {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9375rem;
+  color: #1e293b;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  text-transform: uppercase;
 }
 
 .status-badge.pending { background: #fff3cd; color: #856404; }
 .status-badge.in-progress { background: #cce5ff; color: #004085; }
 .status-badge.resolved { background: #d4edda; color: #155724; }
-.report-type-badge { background: #e9ecef; color: #495057; }
-.urgency-badge.low { background: #d1ecf1; color: #0c5460; }
-.urgency-badge.medium { background: #fff3cd; color: #856404; }
-.urgency-badge.high { background: #f8d7da; color: #721c24; }
-.urgency-badge.emergency { background: #f5c6cb; color: #842029; }
 
-/* === ACTION BUTTONS === */
-.action-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.5rem;
-  min-width: 240px;
+/* Urgency Indicator */
+.urgency-badge {
+  display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
 }
 
-.action-btn,
-.status-indicator,
-.grid-placeholder {
-  min-width: 75px;
-  height: 38px;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
+.urgency-badge.low { color: #10b981; }
+.urgency-badge.medium { color: #f59e0b; }
+.urgency-badge.high { color: #ef4444; }
+.urgency-badge.emergency { color: #dc2626; font-weight: 800; }
+
+/* Action Buttons */
+.action-buttons {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  gap: 0.75rem;
 }
 
 .action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
+  position: relative;
 }
 
-.action-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+.btn-text { display: none; }
+
+.action-btn.view { background: #f1f5f9; color: #475569; }
+.action-btn.progress { background: #eff6ff; color: #2563eb; }
+.action-btn.resolve { background: #f0fdf4; color: #16a34a; }
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.95);
 }
 
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
+/* Empty State */
+.empty-state-wrapper {
+  padding: 4rem 2rem;
+  display: flex;
+  justify-content: center;
 }
 
-.grid-placeholder {
-  visibility: hidden;
-}
-
-/* Button Colors */
-.action-btn.view { background: #e2e3e5; color: #383d41; }
-.action-btn.view:hover:not(:disabled) { background: #d6d8db; }
-.action-btn.progress { background: #007bff; color: white; }
-.action-btn.progress:hover:not(:disabled) { background: #0056b3; }
-.action-btn.resolve { background: #28a745; color: white; }
-.action-btn.resolve:hover:not(:disabled) { background: #218838; }
-.action-btn.close { background: #6c757d; color: white; }
-.action-btn.close:hover:not(:disabled) { background: #545b62; }
-
-.status-indicator {
-  background: #d4edda;
-  color: #155724;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-/* === Empty State === */
-.empty-state {
-  padding: 3rem;
+.empty-card {
   text-align: center;
+  max-width: 400px;
+}
+
+.empty-icon-ring {
+  width: 80px;
+  height: 80px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #94a3b8;
+  margin: 0 auto 1.5rem;
+}
+
+.empty-card h3 {
+  font-family: 'Outfit';
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.empty-card p {
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+.btn-clear {
+  padding: 0.75rem 1.5rem;
   background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.empty-state i {
-  font-size: 3rem;
-  color: #bdc3c7;
-  margin-bottom: 1rem;
+.btn-clear:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
-.empty-state p {
-  color: #7f8c8d;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
-}
-
-.empty-state .subtext {
-  font-size: 0.9rem;
-  color: #95a5a6;
-}
-
-/* === Toast === */
+/* Toast */
 .toast {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #28a745;
+  bottom: 2rem;
+  right: 2rem;
+  background: #0f172a;
   color: white;
   padding: 1rem 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   transform: translateY(100px);
   opacity: 0;
-  transition: all 0.3s ease;
-  z-index: 1100;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
 }
 
 .toast.show {
@@ -785,40 +902,11 @@ th {
   opacity: 1;
 }
 
-.toast.error {
-  background: #dc3545;
-}
+.toast.error { background: #ef4444; }
 
-/* === Responsive === */
-@media (max-width: 768px) {
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .form-select, .search-box {
-    width: 100%;
-  }
-
-  .stats-cards {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .action-buttons {
-    grid-template-columns: 1fr 1fr;
-    min-width: auto;
-    gap: 0.4rem;
-  }
-
-  .action-btn,
-  .status-indicator {
-    min-width: 60px;
-    font-size: 0.8rem;
-    height: 36px;
-  }
-
-  .action-buttons > *:nth-child(3) {
-    grid-column: span 2;
-  }
+@media (max-width: 640px) {
+  .manage-reports { padding: 1.5rem; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .action-buttons { flex-direction: column; }
 }
 </style>

@@ -150,8 +150,12 @@
               <span v-else-if="requestDetails.status === 'pending'">
                 Your request is being processed. Typically takes 2-3 business days.
               </span>
-              <span v-else-if="requestDetails.status === 'rejected'">
-                Your request was not approved. Contact the barangay office for details.
+               <span v-else-if="requestDetails.status === 'rejected'">
+                Your request was not approved.
+                <div v-if="requestDetails.rejectionMessage" class="rejection-reason">
+                  <strong>Reason:</strong> {{ requestDetails.rejectionMessage }}
+                </div>
+                <div v-else>Contact the barangay office for details.</div>
               </span>
               <span v-else>
                 Current status: {{ requestDetails.status }}
@@ -631,6 +635,23 @@ export default {
 .urgency-badge.low {
   background-color: #c6f6d5;
   color: #38a169;
+}
+
+.rejection-reason {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #fff5f5;
+  border-left: 4px solid #f56565;
+  border-radius: 4px;
+  color: #c53030;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.rejection-reason strong {
+  color: #9b2c2c;
+  display: block;
+  margin-bottom: 0.25rem;
 }
 
 .resolution-notes {
