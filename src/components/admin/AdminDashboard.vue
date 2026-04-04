@@ -193,15 +193,15 @@
           <div class="card-header">
             <h3>All Users</h3>
             <div class="card-actions">
-              <div class="filter-group">
-                <select v-model="roleFilter" @change="fetchAllUsers">
+              <div class="filter-group d-flex gap-2">
+                <select class="form-select custom-select-arrow modern-filter" v-model="roleFilter" @change="fetchAllUsers">
                   <option value="">All Roles</option>
                   <option value="admin">Administrator</option>
                   <option value="barangay_official">Barangay Official</option>
                   <option value="sk_official">SK Official</option>
                   <option value="resident">Resident</option>
                 </select>
-                <select v-model="statusFilter" @change="fetchAllUsers">
+                <select class="form-select custom-select-arrow modern-filter" v-model="statusFilter" @change="fetchAllUsers">
                   <option value="">All Status</option>
                   <option value="approved">Approved</option>
                   <option value="pending">Pending</option>
@@ -288,7 +288,7 @@
             <h3>Recent Transactions</h3>
             <div class="card-actions">
               <div class="filter-group">
-                <select v-model="dateFilter" @change="filterTransactionsByDate">
+                <select class="form-select custom-select-arrow modern-filter" v-model="dateFilter" @change="filterTransactionsByDate">
                   <option value="7">Last 7 days</option>
                   <option value="30">Last 30 days</option>
                   <option value="90">Last 90 days</option>
@@ -2139,5 +2139,26 @@ textarea.form-control {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.custom-select-arrow {
+  appearance: none;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  padding-right: 2.25rem !important;
+  color: #495057;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.custom-select-arrow:focus {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 </style>

@@ -23,9 +23,14 @@
             <input type="text" v-model="form.contact" required class="form-control" placeholder="0912-345-6789" />
           </div>
 
-          <div class="form-group">
-            <label>Temporary Password</label>
-            <input type="password" v-model="form.password" required class="form-control" placeholder="Minimum 8 characters" minlength="8" />
+          <div class="form-group mb-3">
+            <label class="form-label">Temporary Password</label>
+            <div class="position-relative">
+              <input :type="showPassword ? 'text' : 'password'" v-model="form.password" required class="form-control" style="padding-right: 2.5rem;" placeholder="Minimum 8 characters" minlength="8" />
+              <button type="button" class="btn btn-link toggle-password position-absolute" @click="showPassword = !showPassword" style="right: 10px; top: 50%; padding: 0; outline: none; box-shadow: none; border: none; transform: translateY(-50%); background: transparent; text-decoration: none; color: #6c757d;">
+                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
           </div>
 
           <div v-if="error" class="error-message">
@@ -64,6 +69,7 @@ export default {
   },
   data() {
     return {
+      showPassword: false,
       form: {
         name: '',
         email: '',
@@ -81,6 +87,7 @@ export default {
       this.$emit('save', { ...this.form });
     },
     resetForm() {
+      this.showPassword = false;
       this.form = {
         name: '',
         email: '',
