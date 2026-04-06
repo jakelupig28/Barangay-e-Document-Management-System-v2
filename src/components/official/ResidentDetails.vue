@@ -1,5 +1,26 @@
 <template>
   <div class="resident-details container-fluid py-5 px-4 px-md-5">
+    <transition name="notify-fade">
+      <div
+        v-if="notification.show"
+        class="notify-popup"
+        :class="`notify-${notification.type}`"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="notify-icon">
+          <i :class="notification.type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle'"></i>
+        </div>
+        <div class="notify-copy">
+          <div class="notify-title">{{ notification.type === 'error' ? 'Action Failed' : 'Success' }}</div>
+          <div class="notify-message">{{ notification.message }}</div>
+        </div>
+        <button class="notify-close" @click="hideNotification" aria-label="Close notification">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </transition>
+
     <!-- Back Button -->
     <div class="mb-4">
       <button class="btn btn-outline-secondary rounded-pill px-4" @click="$router.push('/official/residents')">
@@ -168,7 +189,14 @@
             </h5>
           </div>
           <div class="card-body p-4 text-center">
-            <img :src="resident.barangayIdImage" alt="Barangay ID" class="img-fluid rounded border shadow-sm" style="max-height: 400px; object-fit: contain;">
+            <img
+              :src="resident.barangayIdImage"
+              alt="Barangay ID"
+              class="img-fluid rounded border shadow-sm uploaded-id-preview"
+              style="max-height: 400px; object-fit: contain;"
+              @click="openImagePreview"
+            >
+            <div class="small text-muted mt-2">Click the ID to view a larger version</div>
           </div>
         </div>
       </div>
@@ -191,7 +219,7 @@
                 <div>
                   <div class="small text-muted mb-1">Account Status</div>
                   <span :class="`badge bg-${getStatusBadgeColor(resident.status)} fs-6 px-3 py-2`">
-                    {{ resident.status ? resident.status.charAt(0).toUpperCase() + resident.status.slice(1) : 'Not set' }}
+                    {{ formatStatusLabel(resident.status) }}
                   </span>
                 </div>
               </div>
@@ -227,17 +255,45 @@
       <!-- Action Buttons -->
       <div class="d-flex flex-wrap gap-3 mt-4">
         <template v-if="!resident.isApproved && resident.status !== 'rejected'">
-          <button class="btn btn-success px-4" @click="approveResident">
+          <button class="btn btn-success px-4 action-btn" @click="approveResident">
             <i class="fas fa-check me-2"></i> Approve Resident
           </button>
-          <button class="btn btn-warning px-4" @click="rejectResident">
+          <button class="btn btn-warning px-4 action-btn" @click="rejectResident">
             <i class="fas fa-times me-2"></i> Reject Resident
           </button>
         </template>
-        <button class="btn btn-danger px-4 ms-auto" @click="confirmDelete">
+        <button class="btn btn-danger px-4 ms-auto action-btn" @click="confirmDelete">
           <i class="fas fa-trash-alt me-2"></i> Delete Resident
         </button>
       </div>
+    </div>
+
+    <div
+      v-if="showImagePreview && resident?.barangayIdImage"
+      class="image-preview-modal"
+      @click.self="closeImagePreview"
+    >
+      <div class="image-preview-toolbar" @click.stop>
+        <button class="image-preview-tool" @click="zoomOutImage" aria-label="Zoom out">
+          <i class="fas fa-search-minus"></i>
+        </button>
+        <span class="image-preview-zoom-label">{{ Math.round(imageZoom * 100) }}%</span>
+        <button class="image-preview-tool" @click="zoomInImage" aria-label="Zoom in">
+          <i class="fas fa-search-plus"></i>
+        </button>
+        <button class="image-preview-tool" @click="resetImageZoom" aria-label="Reset zoom">
+          <i class="fas fa-undo"></i>
+        </button>
+      </div>
+      <button class="image-preview-close" @click="closeImagePreview" aria-label="Close image preview">
+        <i class="fas fa-times"></i>
+      </button>
+      <img
+        :src="resident.barangayIdImage"
+        alt="Barangay ID enlarged preview"
+        class="image-preview-full"
+        :style="{ transform: `scale(${imageZoom})` }"
+      >
     </div>
 
     <!-- Delete Confirmation Modal -->
@@ -277,7 +333,15 @@ export default {
       loading: true,
       error: null,
       showDeleteModal: false,
-      deleting: false
+      deleting: false,
+      showImagePreview: false,
+      imageZoom: 1,
+      notification: {
+        show: false,
+        type: 'success',
+        message: ''
+      },
+      notificationTimer: null
     }
   },
   computed: {
@@ -287,6 +351,11 @@ export default {
   },
   async created() {
     await this.fetchResident()
+  },
+  beforeUnmount() {
+    if (this.notificationTimer) {
+      clearTimeout(this.notificationTimer)
+    }
   },
   methods: {
     isFirebaseReady() {
@@ -312,14 +381,17 @@ export default {
               role: user.role,
               status: user.status || (residentObj ? residentObj.status : 'approved'),
               isApproved: user.status === 'approved' || (residentObj && residentObj.status === 'approved') || user.role !== 'resident',
-              name: user.profile?.name || user.email,
-              contact: user.profile?.contact || '',
-              address: user.profile?.address || '',
-              birthdate: user.profile?.birthdate || '',
-              gender: user.profile?.gender || '',
-              createdAt: user.profile?.createdAt || (residentObj ? residentObj.createdAt : ''),
-              barangayIdImage: residentObj ? residentObj.barangayIdImage : null,
-              idExpiresAt: residentObj ? residentObj.idExpiresAt : null
+              name: user.profile?.name || user.name || user.email,
+              contact: user.profile?.contact || user.contact || '',
+              address: user.profile?.address || user.address || '',
+              barangayName: user.profile?.barangayName || user.barangayName || '',
+              birthdate: user.profile?.birthdate || user.birthdate || '',
+              gender: user.profile?.gender || user.gender || '',
+              civilStatus: user.profile?.civilStatus || user.civilStatus || '',
+              createdAt: user.profile?.createdAt || user.createdAt || (residentObj ? residentObj.createdAt : ''),
+              updatedAt: user.updatedAt || (residentObj ? residentObj.updatedAt : null),
+              barangayIdImage: (residentObj && residentObj.barangayIdImage) || user.barangayIdImage || null,
+              idExpiresAt: (residentObj && residentObj.idExpiresAt) || user.idExpiresAt || null
             };
             return;
           } else {
@@ -331,9 +403,18 @@ export default {
         const docSnap = await getDoc(docRef)
 
         if (docSnap.exists()) {
+          const data = docSnap.data()
           this.resident = {
             id: docSnap.id,
-            ...docSnap.data()
+            ...data,
+            name: data.profile?.name || data.name || data.email,
+            contact: data.profile?.contact || data.contact || '',
+            address: data.profile?.address || data.address || '',
+            barangayName: data.profile?.barangayName || data.barangayName || '',
+            birthdate: data.profile?.birthdate || data.birthdate || '',
+            gender: data.profile?.gender || data.gender || '',
+            civilStatus: data.profile?.civilStatus || data.civilStatus || '',
+            createdAt: data.profile?.createdAt || data.createdAt || null
           }
         } else {
           throw new Error('Resident not found')
@@ -370,12 +451,22 @@ export default {
 
     getStatusBadgeColor(status) {
       switch (status) {
+        case 'approved': return 'success'
+        case 'pending_validation': return 'secondary'
+        case 'rejected': return 'danger'
         case 'active': return 'success'
         case 'inactive': return 'secondary'
         case 'suspended': return 'warning'
         case 'banned': return 'danger'
         default: return 'secondary'
       }
+    },
+
+    formatStatusLabel(status) {
+      if (!status) return 'Not set'
+      return String(status)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
     },
 
     isIdValid(expiryDate) {
@@ -418,19 +509,11 @@ export default {
         
         // Refresh resident data
         await this.fetchResident()
-        
-        if (this.$toast) {
-          this.$toast.success('Resident approved successfully')
-        } else {
-          alert('Resident approved successfully')
-        }
+
+        this.showNotification('Resident approved successfully.', 'success')
       } catch (error) {
         console.error('Error approving resident:', error)
-        if (this.$toast) {
-          this.$toast.error('Failed to approve resident')
-        } else {
-          alert('Failed to approve resident')
-        }
+        this.showNotification('Failed to approve resident.', 'error')
       }
     },
     async rejectResident() {
@@ -464,19 +547,11 @@ export default {
         
         // Refresh resident data
         await this.fetchResident()
-        
-        if (this.$toast) {
-          this.$toast.success('Resident rejected successfully')
-        } else {
-          alert('Resident rejected successfully')
-        }
+
+        this.showNotification('Resident rejected successfully.', 'success')
       } catch (error) {
         console.error('Error rejecting resident:', error)
-        if (this.$toast) {
-          this.$toast.error('Failed to reject resident')
-        } else {
-          alert('Failed to reject resident')
-        }
+        this.showNotification('Failed to reject resident.', 'error')
       }
     },
 
@@ -496,22 +571,55 @@ export default {
         }
         
         this.$router.push('/official/residents')
-        if (this.$toast) {
-          this.$toast.success('Resident deleted successfully')
-        } else {
-          alert('Resident deleted successfully')
-        }
+        this.showNotification('Resident deleted successfully.', 'success')
       } catch (error) {
         console.error('Error deleting resident:', error)
-        if (this.$toast) {
-          this.$toast.error('Failed to delete resident')
-        } else {
-          alert('Failed to delete resident')
-        }
+        this.showNotification('Failed to delete resident.', 'error')
       } finally {
         this.deleting = false
         this.showDeleteModal = false
       }
+    },
+
+    showNotification(message, type = 'success') {
+      if (this.notificationTimer) {
+        clearTimeout(this.notificationTimer)
+      }
+
+      this.notification = {
+        show: true,
+        type,
+        message
+      }
+
+      this.notificationTimer = setTimeout(() => {
+        this.hideNotification()
+      }, 3500)
+    },
+
+    hideNotification() {
+      this.notification.show = false
+    },
+
+    openImagePreview() {
+      this.showImagePreview = true
+      this.imageZoom = 1
+    },
+
+    closeImagePreview() {
+      this.showImagePreview = false
+    },
+
+    zoomInImage() {
+      this.imageZoom = Math.min(this.imageZoom + 0.25, 4)
+    },
+
+    zoomOutImage() {
+      this.imageZoom = Math.max(this.imageZoom - 0.25, 0.75)
+    },
+
+    resetImageZoom() {
+      this.imageZoom = 1
     }
   }
 }
@@ -521,13 +629,105 @@ export default {
 <style scoped>
 .resident-details {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #f8f9fa;
+  background: linear-gradient(180deg, #f3f8ff 0%, #eef3fb 100%);
   min-height: 100vh;
 }
 
 .resident-content {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.notify-popup {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 1700;
+  width: min(420px, calc(100vw - 24px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #dbe3ef;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.2);
+}
+
+.notify-success {
+  border-left: 5px solid #22c55e;
+}
+
+.notify-error {
+  border-left: 5px solid #ef4444;
+}
+
+.notify-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.notify-success .notify-icon {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.notify-error .notify-icon {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.notify-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.notify-title {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.notify-message {
+  margin-top: 4px;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.notify-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notify-close:hover {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.notify-fade-enter-active,
+.notify-fade-leave-active {
+  transition: all 0.22s ease;
+}
+
+.notify-fade-enter-from,
+.notify-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
 }
 
 .card {
@@ -545,6 +745,23 @@ export default {
   font-weight: 600;
 }
 
+.card-header.bg-primary {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 55%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+}
+
+.card-header.bg-light {
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f5f9 100%) !important;
+}
+
+.d-flex.align-items-start > div {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -556,39 +773,155 @@ export default {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: #f1f3f5;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .status-item:hover {
-  background: #e9ecef;
+  background: #e0edff;
   transform: translateY(-1px);
 }
 
 .status-item .icon {
   font-size: 1.5rem;
-  color: #6c757d;
+  color: #2563eb;
+}
+
+@media (max-width: 768px) {
+  .notify-popup {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .image-preview-modal {
+    padding: 12px;
+  }
+
+  .image-preview-close {
+    top: 10px;
+    right: 10px;
+  }
+
+  .image-preview-toolbar {
+    top: 10px;
+    gap: 8px;
+    padding: 6px 8px;
+  }
+
+  .image-preview-tool {
+    width: 30px;
+    height: 30px;
+  }
 }
 
 .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
   font-size: 1rem;
-  transition: all 0.2s ease;
-  text-decoration: none;
 }
 
-.btn:hover {
-  background: #5a6268;
+.action-btn {
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.action-btn:hover {
   transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.26);
+}
+
+.uploaded-id-preview {
+  cursor: zoom-in;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.uploaded-id-preview:hover {
+  transform: scale(1.01);
+  box-shadow: 0 10px 24px rgba(30, 64, 175, 0.22) !important;
+}
+
+.image-preview-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1800;
+  padding: 24px;
+}
+
+.image-preview-full {
+  width: auto;
+  max-width: min(1000px, 90vw);
+  max-height: 82vh;
+  border-radius: 14px;
+  border: 2px solid rgba(191, 219, 254, 0.7);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+  transform-origin: center center;
+  transition: transform 0.2s ease;
+}
+
+.image-preview-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.image-preview-toolbar {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(191, 219, 254, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.image-preview-tool {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview-tool:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.image-preview-zoom-label {
+  min-width: 58px;
+  text-align: center;
+  color: #dbeafe;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 .spinner-border {
   width: 3.5rem;
@@ -629,60 +962,6 @@ export default {
   .status-item {
     margin-bottom: 1rem;
     page-break-inside: avoid;
-  }
-}
-</style>
-<style scoped>
-.resident-details {
-  max-width: 1200px;
-  margin: 0 auto;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-.card {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.card-header {
-  border-radius: 12px 12px 0 0 !important;
-}
-
-.font-monospace {
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-}
-
-.btn {
-  transition: all 0.2s ease;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-}
-
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
-}
-
-.modal-content {
-  border-radius: 12px;
-  border: none;
-}
-
-.badge {
-  font-size: 0.75em;
-}
-
-/* Print styles */
-@media print {
-  .btn, .modal, .alert {
-    display: none !important;
-  }
-  
-  .card {
-    border: 1px solid #ddd !important;
-    box-shadow: none !important;
   }
 }
 </style>

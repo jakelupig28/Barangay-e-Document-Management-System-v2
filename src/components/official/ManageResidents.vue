@@ -2,6 +2,27 @@
   <div class="manage-residents container py-4">
     <h2 class="mb-4 fw-bold">Resident Management</h2>
 
+    <transition name="notify-fade">
+      <div
+        v-if="notification.show"
+        class="notify-popup"
+        :class="`notify-${notification.type}`"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="notify-icon">
+          <i :class="notificationIcon"></i>
+        </div>
+        <div class="notify-content">
+          <div class="notify-title">{{ notificationTitle }}</div>
+          <div class="notify-message">{{ notification.message }}</div>
+        </div>
+        <button class="notify-close" @click="hideNotification" aria-label="Close notification">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </transition>
+
     <!-- Search Bar -->
     <div class="search-bar mb-4">
       <div class="input-group shadow-sm" style="max-width: 400px;">
@@ -116,7 +137,13 @@ export default {
       searchQuery: '',
       currentPage: 1,
       pageSize: 10,
-      maxVisiblePages: 5
+      maxVisiblePages: 5,
+      notification: {
+        show: false,
+        type: 'success',
+        message: ''
+      },
+      notificationTimer: null
     }
   },
   computed: {
@@ -137,10 +164,23 @@ export default {
       }
       
       return range
+    },
+    notificationIcon() {
+      if (this.notification.type === 'error') return 'fas fa-exclamation-circle'
+      return 'fas fa-check-circle'
+    },
+    notificationTitle() {
+      if (this.notification.type === 'error') return 'Action Failed'
+      return 'Action Completed'
     }
   },
   async created() {
     await this.fetchResidents()
+  },
+  beforeUnmount() {
+    if (this.notificationTimer) {
+      clearTimeout(this.notificationTimer)
+    }
   },
     methods: {
     isFirebaseReady() {
@@ -221,18 +261,10 @@ export default {
         }
         
         await this.fetchResidents();
-        if (this.$toast) {
-          this.$toast.success('Resident approved successfully');
-        } else {
-          alert('Resident approved successfully');
-        }
+        this.showNotification('Resident approved successfully.', 'success');
       } catch (err) {
         console.error('Error approving resident:', err);
-        if (this.$toast) {
-          this.$toast.error('Failed to approve resident');
-        } else {
-          alert('Failed to approve resident');
-        }
+        this.showNotification('Failed to approve resident.', 'error');
       }
     },
 
@@ -266,19 +298,29 @@ export default {
         }
         
         await this.fetchResidents();
-        if (this.$toast) {
-          this.$toast.success('Resident rejected successfully');
-        } else {
-          alert('Resident rejected successfully');
-        }
+        this.showNotification('Resident rejected successfully.', 'success');
       } catch (err) {
         console.error('Error rejecting resident:', err);
-        if (this.$toast) {
-          this.$toast.error('Failed to reject resident');
-        } else {
-          alert('Failed to reject resident');
-        }
+        this.showNotification('Failed to reject resident.', 'error');
       }
+    },
+
+    showNotification(message, type = 'success') {
+      if (this.notificationTimer) {
+        clearTimeout(this.notificationTimer)
+      }
+      this.notification = {
+        show: true,
+        type,
+        message
+      }
+      this.notificationTimer = setTimeout(() => {
+        this.hideNotification()
+      }, 3500)
+    },
+
+    hideNotification() {
+      this.notification.show = false
     },
 
     nextPage() {
@@ -312,6 +354,100 @@ export default {
   margin: 0 auto;
   font-family: 'Outfit', 'Inter', system-ui, sans-serif;
   color: #2d3748;
+  position: relative;
+}
+
+.notify-popup {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1600;
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px 14px 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.15);
+}
+
+.notify-success {
+  border-left: 5px solid #16a34a;
+}
+
+.notify-error {
+  border-left: 5px solid #dc2626;
+}
+
+.notify-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.notify-success .notify-icon {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.notify-error .notify-icon {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.notify-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notify-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.notify-message {
+  font-size: 0.9rem;
+  color: #475569;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.notify-close {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.notify-close:hover {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.notify-fade-enter-active,
+.notify-fade-leave-active {
+  transition: all 0.22s ease;
+}
+
+.notify-fade-enter-from,
+.notify-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
 }
 
 h2 {
@@ -376,6 +512,13 @@ h2 {
 }
 
 @media (max-width: 768px) {
+  .notify-popup {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
   .table-responsive {
     border: 1px solid #dee2e6;
     border-radius: 8px;

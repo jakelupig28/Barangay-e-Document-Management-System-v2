@@ -177,10 +177,9 @@
 </template>
 
 <script>
-import { db, storage } from '@/firebase/config'
+import { db, storage, auth } from '@/firebase/config'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { getAuth } from 'firebase/auth'
 
 export default {
   name: 'ResidentReport',
@@ -202,8 +201,11 @@ export default {
     }
   },
   created() {
-    const auth = getAuth()
-    this.currentUser = auth.currentUser
+    this.currentUser = auth?.currentUser;
+    // Note: since this project is in local mode, we fallback to a mock user.
+    if (!this.currentUser) {
+      this.currentUser = { uid: 'mock-resident-123', email: 'resident@example.com' };
+    }
   },
   methods: {
     handleFileUpload(e) {

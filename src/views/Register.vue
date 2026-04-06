@@ -52,13 +52,6 @@
                 <i class="fas fa-user input-icon"></i>
               </div>
 
-              <!-- Email -->
-              <div class="form-group floating-group">
-                <input v-model.trim="form.email" type="email" class="modern-input" id="emailInput" placeholder=" " required />
-                <label for="emailInput" class="floating-label">Email Address</label>
-                <i class="fas fa-envelope input-icon"></i>
-              </div>
-
               <!-- Contact Number -->
               <div class="form-group floating-group">
                 <input v-model.trim="form.contact" type="text" class="modern-input" id="contactInput" placeholder=" " required />
@@ -78,6 +71,27 @@
                 <i class="fas fa-venus-mars input-icon"></i>
               </div>
 
+              <!-- Civil Status -->
+              <div class="form-group floating-group">
+                <select v-model="form.civilStatus" class="modern-input has-value" id="civilStatusInput" required>
+                  <option value="" disabled>Select Civil Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Widowed">Widowed</option>
+                  <option value="Separated">Separated</option>
+                  <option value="Divorced">Divorced</option>
+                </select>
+                <label for="civilStatusInput" class="floating-label fixed-label">Civil Status</label>
+                <i class="fas fa-heart input-icon"></i>
+              </div>
+
+              <!-- Email -->
+              <div class="form-group floating-group full-width">
+                <input v-model.trim="form.email" type="email" class="modern-input" id="emailInput" placeholder=" " required />
+                <label for="emailInput" class="floating-label">Email Address</label>
+                <i class="fas fa-envelope input-icon"></i>
+              </div>
+
               <!-- Password -->
               <div class="form-group floating-group pr-0">
                 <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="modern-input password-input" id="passwordInput" placeholder=" " required />
@@ -89,7 +103,7 @@
               </div>
 
               <!-- Confirm Password -->
-              <div class="form-group floating-group pr-0">
+              <div class="form-group floating-group pr-0" :class="passwordMatchClass">
                 <input v-model="form.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" class="modern-input password-input" id="confirmPasswordInput" placeholder=" " required />
                 <label for="confirmPasswordInput" class="floating-label">Confirm Password</label>
                 <i class="fas fa-lock input-icon"></i>
@@ -189,6 +203,7 @@ export default {
         confirmPassword: '',
         birthdate: '',
         gender: '',
+        civilStatus: '',
         contact: '',
         address: '',
       },
@@ -202,6 +217,10 @@ export default {
     };
   },
   computed: {
+    passwordMatchClass() {
+      if (!this.form.confirmPassword) return '';
+      return this.form.password === this.form.confirmPassword ? 'match-success' : 'match-error';
+    },
     computedAge() {
       if (!this.form.birthdate) return '';
       const birth = new Date(this.form.birthdate);
@@ -432,7 +451,7 @@ export default {
   font-size: 1rem;
   border: 1px solid #d1d5db;
   border-radius: 12px;
-  background: #fdfdfd;
+  background-color: #fdfdfd;
   color: #111827;
   transition: all 0.2s;
 }
@@ -441,7 +460,7 @@ export default {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: #ffffff;
+  background-color: #ffffff;
 }
 
 .floating-label {
@@ -749,5 +768,49 @@ export default {
   .auth-right { padding: 3rem 1.5rem; }
   .auth-container { max-width: 500px; min-height: auto; }
   .form-grid { grid-template-columns: 1fr; }
+}
+
+/* Match Status Indicators */
+.match-success .modern-input {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+.match-success .input-icon,
+.match-success .floating-label,
+.match-success .toggle-password {
+  color: #10b981;
+}
+
+.match-error .modern-input {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+.match-error .input-icon,
+.match-error .floating-label,
+.match-error .toggle-password {
+  color: #ef4444;
+}
+
+/* Custom Dropdown Styling */
+select.modern-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2em;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+select.modern-input:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+select.modern-input option {
+  color: #111827;
+  background: white;
+  padding: 10px;
 }
 </style>
