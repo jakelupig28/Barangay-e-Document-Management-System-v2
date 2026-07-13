@@ -3,6 +3,7 @@
     <div class="auth-container">
       <!-- Left Side: Branding -->
       <div class="auth-left">
+        <router-link to="/" class="back-link desktop-back-link"><i class="fas fa-arrow-left"></i> Back to Home</router-link>
 
         <div class="brand-showcase">
           <div class="logo-wrapper">
@@ -21,7 +22,7 @@
 
       <!-- Right Side: Form -->
       <div class="auth-right">
-        <router-link to="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</router-link>
+        <router-link to="/" class="back-link mobile-back-link"><i class="fas fa-arrow-left"></i> Back to Home</router-link>
         
         <div class="auth-card">
           <div class="auth-header text-center mb-4">
@@ -34,21 +35,21 @@
               
               <!-- First Name -->
               <div class="form-group floating-group">
-                <input v-model.trim="form.firstName" type="text" class="modern-input" id="firstNameInput" placeholder=" " required />
+                <input v-model.trim="form.firstName" @input="form.firstName = capitalize(form.firstName)" type="text" class="modern-input" id="firstNameInput" placeholder=" " required style="text-transform: capitalize;" />
                 <label for="firstNameInput" class="floating-label">First Name</label>
                 <i class="fas fa-user input-icon"></i>
               </div>
 
               <!-- Middle Name -->
               <div class="form-group floating-group">
-                <input v-model.trim="form.middleName" type="text" class="modern-input" id="middleNameInput" placeholder=" " />
+                <input v-model.trim="form.middleName" @input="form.middleName = capitalize(form.middleName)" type="text" class="modern-input" id="middleNameInput" placeholder=" " style="text-transform: capitalize;" />
                 <label for="middleNameInput" class="floating-label">Middle Name</label>
                 <i class="fas fa-user input-icon"></i>
               </div>
 
               <!-- Last Name -->
               <div class="form-group floating-group">
-                <input v-model.trim="form.lastName" type="text" class="modern-input" id="lastNameInput" placeholder=" " required />
+                <input v-model.trim="form.lastName" @input="form.lastName = capitalize(form.lastName)" type="text" class="modern-input" id="lastNameInput" placeholder=" " required style="text-transform: capitalize;" />
                 <label for="lastNameInput" class="floating-label">Last Name</label>
                 <i class="fas fa-user input-icon"></i>
               </div>
@@ -236,6 +237,13 @@ export default {
     }
   },
   methods: {
+    capitalize(val) {
+      if (!val) return '';
+      return val
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    },
     handleFileChange(event) {
       const file = event.target.files?.[0];
       if (!file) {
@@ -421,7 +429,7 @@ export default {
   position: absolute;
   top: 2rem;
   left: 2.5rem;
-  color: #6b7280;
+  color: #cbd5e1;
   text-decoration: none;
   font-weight: 500;
   font-size: 0.95rem;
@@ -429,10 +437,19 @@ export default {
   align-items: center;
   gap: 0.5rem;
   transition: color 0.2s;
+  z-index: 10;
 }
 
-.back-link:hover {
-  color: #1e3a8a;
+.desktop-back-link {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.desktop-back-link:hover {
+  color: #ffffff;
+}
+
+.mobile-back-link {
+  display: none !important;
 }
 
 .auth-card {
@@ -785,9 +802,16 @@ export default {
 
 @media (max-width: 900px) {
   .auth-left { display: none; }
-  .auth-right { padding: 3rem 1.5rem; }
+  .auth-right { padding: 3.5rem 1.5rem 2rem 1.5rem; }
   .auth-container { max-width: 500px; min-height: auto; }
   .form-grid { grid-template-columns: 1fr; }
+  .mobile-back-link {
+    display: flex !important;
+    position: absolute;
+    top: 1.25rem;
+    left: 1.5rem;
+    color: #6b7280;
+  }
 }
 
 /* Match Status Indicators */

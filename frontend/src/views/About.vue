@@ -65,7 +65,7 @@
           <!-- Leader 1 -->
           <div class="leader-card">
             <div class="leader-avatar-wrapper">
-              <img src="@/assets/brgy captain pic.jpeg" alt="Angelito G. Dula" class="leader-avatar" />
+              <img src="@/assets/brgy captain pic.jpeg" alt="Angelito G. Dula" class="leader-avatar captain-avatar" />
             </div>
             <h3 class="leader-name">Angelito G. Dula</h3>
             <p class="leader-role">Barangay Captain</p>
@@ -74,7 +74,7 @@
           <!-- Leader 2 -->
           <div class="leader-card">
             <div class="leader-avatar-wrapper">
-              <img src="@/assets/leader-maria.png" alt="Rose Marie A. Soriano" class="leader-avatar" />
+              <img src="@/assets/brgy secretary.jpg" alt="Rose Marie A. Soriano" class="leader-avatar secretary-avatar" />
             </div>
             <h3 class="leader-name">Rose Marie A. Soriano</h3>
             <p class="leader-role">Barangay Secretary</p>
@@ -83,7 +83,7 @@
           <!-- Leader 3 -->
           <div class="leader-card">
             <div class="leader-avatar-wrapper">
-              <img src="@/assets/leader-ana.png" alt="Jannet M. Rivera" class="leader-avatar" />
+              <img src="@/assets/brgy treasurer.jpg" alt="Jannet M. Rivera" class="leader-avatar treasurer-avatar" />
             </div>
             <h3 class="leader-name">Jannet M. Rivera</h3>
             <p class="leader-role">Barangay Treasurer</p>
@@ -92,7 +92,7 @@
           <!-- Leader 4 -->
           <div class="leader-card">
             <div class="leader-avatar-wrapper">
-              <img src="@/assets/leader-jose.png" alt="Tyrone C. Fuertes" class="leader-avatar" />
+              <img src="@/assets/sk chairperson.jpg" alt="Tyrone C. Fuertes" class="leader-avatar sk-avatar" />
             </div>
             <h3 class="leader-name">Tyrone C. Fuertes</h3>
             <p class="leader-role">SK Chairperson</p>
@@ -437,6 +437,22 @@ export default {
   object-fit: cover;
 }
 
+.captain-avatar {
+  object-position: center 10%;
+}
+
+.secretary-avatar {
+  object-position: center 15%;
+}
+
+.treasurer-avatar {
+  object-position: center 10%;
+}
+
+.sk-avatar {
+  object-position: center 10%;
+}
+
 .leader-name {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
@@ -652,6 +668,19 @@ export default {
   }
   .core-values-grid {
     grid-template-columns: 1fr;
+  }
+  /* Additional mobile responsiveness */
+  .hero-section, .story-section, .leadership-section, .values-section, .experience-section {
+    padding: 3.5rem 0;
+  }
+  .hero-title {
+    font-size: 2.15rem;
+  }
+  .section-title, .story-title, .values-title, .experience-title {
+    font-size: 1.85rem;
+  }
+  .hero-description, .story-desc, .statement-text, .experience-subtitle {
+    font-size: 0.95rem;
   }
 }
 

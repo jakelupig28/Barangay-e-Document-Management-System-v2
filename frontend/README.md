@@ -1,126 +1,87 @@
 # Barangay e-Document Management System (v2)
 
-A state-of-the-art, secure, and reactive web platform designed to digitize and automate barangay-level operations. Built on **Vue 3**, **Bootstrap 5**, and a hybrid data layer (**Firebase** & **Local JSON Database**), the system streamlines public service requests, community complaints, youth initiatives, and administrative oversight.
+Welcome to the **Barangay e-Document Management System (v2)**—a secure, responsive, and modern platform designed to automate and digitize citizen services, youth (SK) initiatives, community complaints, and administrative operations.
+
+The repository is organized as a monorepo split into two primary components:
+1. **`frontend/`**: The client-side application built with Vue 3 and Bootstrap 5.
+2. **`backend/`**: The newly initialized Node.js Express API service powered by the Firebase Admin SDK.
 
 ---
 
-## 🌟 Project Highlights
+## 📂 Repository Directory Layout
 
-- **Dual-Engine Architecture:** Seamlessly switches between a real-time Cloud Firebase setup and a robust offline local storage backup (`localDb.js` / `local.json`) without degrading user experience.
-- **Granular Role-Based Access Control (RBAC):** Tailored views, navigation sidebars, and dashboards for Residents, SK Officials, Barangay Staff/Officials, and Super Admins.
-- **Intelligent Assistant:** Features a built-in AI Chatbot powered by the Cohere API to guide residents on requirements and procedures.
-- **Rich Analytics & Data Export:** Visual representation of user roles, request statuses, and resident demographics using custom charts (SVG-based and Chart.js), with native Excel (XLSX) exporting capabilities.
-- **System Maintenance Gatekeeper:** A global toggle to place the site under maintenance, showing users a custom explanation and estimated completion time.
-
----
-
-## 👥 User Roles & Features
-
-### 🏢 1. Super Admin (Barangay Chairman Portal)
-The ultimate administration panel to monitor users, analyze analytics, and configure system flags:
-- **Comprehensive User Management:** Filter, search, and manage all accounts. Supports bulk approval and deletion.
-- **Staff Provisioning:** Securely create official Barangay Staff and Official accounts with default passwords.
-- **System Maintenance Toggle:** Put the entire app under maintenance dynamically, with a custom completion countdown.
-- **Dynamic Chart Analytics:** High-level SVG-rendered bar and doughnut charts displaying user role distributions and resident statuses.
-- **Audit Logs & Data Export:** Export the entire user directory and transaction logs to Excel spreadsheets (XLSX).
-
-### 📋 2. Barangay Officials & Staff Dashboard
-The operational hub for processing citizen documents and public requests:
-- **Document Request Processing:** Review, approve, reject (with feedback), or tag clearance requests as claimed.
-- **Complaints & Incident Management:** Address community reports (e.g., noise complaints, hazard reports). Change statuses from *Pending* to *In Progress* or *Resolved* with resolution notes.
-- **Printable Certificate Generator:** Generate custom certificates (Clearance, Indigency - Financial, Indigency - General) via PDF previews and pre-configured templates.
-- **Resident Directory Management:** Review resident profiles, view uploaded IDs, verify compliance, or request ID re-submission.
-
-### 🏠 3. Residents Portal
-A citizen-facing application to access services and report issues:
-- **Service & Document Requests:** Apply online for Barangay Clearances and Certificates of Indigency.
-- **Real-Time Application Tracking:** Monitor status (`Pending`, `Approved`, `Claimed`, or `Rejected`) with timeline visualizations and pick-up instructions.
-- **Complaint Submission:** Report neighborhood complaints or safety concerns (starts with `RPT-` tracking IDs).
-- **ID Re-upload Workflow:** If flagged for "Compliance Required", residents can drag and drop a new valid ID directly from their dashboard.
-
-
----
-
-## 🛠️ Technology Stack
-
-- **Frontend Core:** [Vue.js 3](https://vuejs.org/) (Composition API, Vue Router, Vuex)
-- **Styling:** Bootstrap 5, FontAwesome Icons, Custom Tailwind CSS integration
-- **Database / Auth:** [Firebase v11](https://firebase.google.com/) (Firestore database, Firebase Authentication, Firebase Storage)
-- **Offline Fallback Service:** Custom local database management wrapper (`localDb.js`)
-- **PDF Generation:** [jsPDF](https://rawgit.com/MrRio/jsPDF/master/docs/index.html)
-- **Excel Export:** [SheetJS (XLSX)](https://sheetjs.com/)
-- **Charts Engine:** [Chart.js](https://www.chartjs.org/) & Custom SVG Chart components
-- **AI Integration:** Cohere API (Chatbot integration)
-
----
-
-## 📁 Key File Structure
-
-```bash
-src/
-├── components/
-│   ├── admin/             # Super Admin views (AdminDashboard, StaffAccountModal)
-│   ├── official/          # Staff & Official views (ManageRequests, PrintableDocument)
-│   ├── resident/          # Resident views (RequestForm, ResidentProfile, Settings)
-│   ├── common/            # Shared components (NavBar, Footer, RealTimeClock)
-│   ├── Chatbot.vue        # AI Chatbot assistant component
-│   └── VerificationPage.vue # Multi-step resident registration verification
-├── views/                 # Root pages (Home, Login, Register, Services, About)
-├── services/
-│   ├── localDb.js         # Local database controller (fallback to local.json)
-│   └── notification.js    # In-app toast & push notification helper
-├── firebase/
-│   └── config.js          # Firestore/Auth initialization
-├── store/
-│   └── index.js           # Vuex state management
-├── router/
-│   └── index.js           # Vue Router config (Navigation guards & role verification)
-└── App.vue                # Main application wrapper (Maintenance routing)
+```text
+Barangay-e-Document-Management-System-v2/
+├── frontend/               # Vue.js 3 Web Client
+│   ├── src/                # Component layers (admin, official, resident)
+│   ├── public/             # Static web assets
+│   ├── package.json        # Frontend scripts and modules
+│   └── README.md           # Frontend-specific documentation
+│
+├── backend/                # Express.js REST API
+│   ├── src/                # Controller, middleware, route, and config folders
+│   └── package.json        # Backend scripts and dependencies
+│
+└── README.md               # Main repository documentation (this file)
 ```
 
 ---
 
-## 🚀 Installation & Local Setup
+## 🌟 Current System State & Completed Features
 
-### 1. Prerequisites
-Ensure you have [Node.js](https://nodejs.org/) installed (v16.x or higher recommended).
+We have successfully refined the system's core capabilities and aligned the user interface with downloaded deliverables. Here is the active feature set of the system today:
 
-### 2. Configure Environment Variables
-Create a `.env` file in the root directory and configure the environment variables based on `.env.example`:
-```env
-SMTP_SERVICE=gmail
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-```
+### 1. Unified Certificate Layouts (Print, PDF, and DOCX)
+* **Design Synchronization:** The templates for Barangay Clearance and Certificates of Indigency look identical across web view, printing, PDF generation (via jsPDF), and Microsoft Word (DOCX) downloads.
+* **Double-Border Frames:** Configured matching blue double-outer and single-inner borders to enclose the document content elegantly.
 
-### 3. Install Dependencies
-Run the following command in your terminal:
-```bash
-npm install
-```
+### 2. High-Fidelity Word (DOCX) Export Setup
+* **Strict Dashed Circular Seal:** Word HTML parsers do not support CSS circular border properties (`border-radius`). To bypass this, the system dynamically draws the official dry seal warning text inside a dashed circle on an HTML5 canvas at runtime, exporting it as an embedded, high-quality base64 PNG. This guarantees the seal displays as a **perfect dashed circle** in Word.
+* **Even Signature Layouts:** Aligned the vertical height of the signature block (`85px`) to sit level with the Captain's signature line on the left.
+* **A4 Canvas Constraints (Single-Page Fitting):** Set Word page margins to `28pt` and resized the inner frame to `539pt` wide by `710pt` high. Coupled with a shortened `50pt` height spacer, this mathematically fits the certificate onto **exactly one page** on A4 paper with zero overflow.
+* **Permanently Suppressed Gridlines:** Standardized tables with the `no-border` class, injecting `border: none !important;` and `mso-border-alt: none !important;` to fully disable Word's default black gridlines.
 
-### 4. Running the Development Server
-If you are on Windows and run into script execution restrictions, launch the server using `cmd.exe`:
-```cmd
-cmd.exe /c npm run serve
-```
-Alternatively, bypass the execution policy in PowerShell:
-```powershell
-powershell -ExecutionPolicy Bypass -Command "npm run serve"
-```
+### 3. Granular Role-Based Dashboards
+* **Super Admin / Chairman Portal:** Supports user account provisioning, system maintenance mode toggle, database exports (XLSX), and real-time SVG charting of resident statistics.
+* **Official & Staff Hub:** Provides approval pathways for clearance request queues, incident report tracking, and certificate generators.
+* **Resident Portal:** Citizen interface to request clearances, track status timelines, and re-upload registration documents.
 
-Once started, the application will be available at:
-- **Local URL:** `http://localhost:8080/`
-
-### 5. Production Build
-To build and optimize the application for production:
-```bash
-npm run build
-```
+### 4. Fully Initialized Backend (Express & Firebase Admin)
+* **Modular Codebase:** Developed folders for `config/`, `controllers/`, `routes/`, `middleware/`, and `utils/`.
+* **Secured API Endpoints:** Protected route groups by verifying Firebase client ID tokens against the Firebase Admin SDK.
+* **Mock Environment Fallback:** If firebase keys are absent during development, the backend automatically transitions to offline/mock mode to prevent server startup errors.
 
 ---
 
-## 🔒 Security & Verification Guards
+## 🚀 Quick Start Guide
 
-- **Navigation Guarding:** Vue Router automatically verifies role permissions. Non-residents cannot access admin paths, and pending residents are redirected to a verification hold page.
-- **Interactive Verification:** Residents must submit valid ID images upon registration. Staff manually verify documents before granting full access to system features.
+### 💻 1. Running the Frontend
+1. Navigate to the `frontend/` directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run serve
+   ```
+4. Access the web app at `http://localhost:8080/`.
+
+### ⚙️ 2. Running the Backend
+1. Navigate to the `backend/` directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. (Optional) Put your Firebase Service Account JSON file in `src/config/serviceAccountKey.json`.
+4. Run in development mode:
+   ```bash
+   npm run dev
+   ```
+5. The API will listen at `http://localhost:5000/`.

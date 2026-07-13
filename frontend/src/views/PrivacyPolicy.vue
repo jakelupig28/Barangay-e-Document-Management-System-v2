@@ -187,4 +187,20 @@ li {
 :global(body.dark-mode li) {
   color: #94a3b8;
 }
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.15rem;
+  }
+  .hero-description {
+    font-size: 1rem;
+  }
+  .glass-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+  .hero-section {
+    padding: 3.5rem 0 2.5rem 0;
+  }
+}
 </style>

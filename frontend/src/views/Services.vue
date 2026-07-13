@@ -250,6 +250,7 @@ export default {
 @media (max-width: 767.98px) {
   .hero-section {
     text-align: center;
+    padding: 3.5rem 0 !important;
   }
   
   .services-hero-img {
@@ -257,7 +258,15 @@ export default {
   }
   
   .section-header h2 {
-    font-size: 2rem;
+    font-size: 1.85rem !important;
+  }
+
+  .display-4 {
+    font-size: 2.25rem !important;
+  }
+
+  .lead {
+    font-size: 1rem !important;
   }
 }
 

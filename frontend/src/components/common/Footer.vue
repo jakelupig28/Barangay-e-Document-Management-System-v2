@@ -11,7 +11,7 @@
             <line x1="16" y1="17" x2="8" y2="17"></line>
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
-          <span class="brand-text">B-Docs</span>
+          <span class="brand-text">Barangay e-Document Request</span>
         </div>
         <p class="copyright-text">
           &copy; {{ new Date().getFullYear() }} Barangay e-Docs. Government of the Philippines

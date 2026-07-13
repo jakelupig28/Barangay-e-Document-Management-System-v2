@@ -11,7 +11,7 @@
             <line x1="16" y1="17" x2="8" y2="17"></line>
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
-          <span class="brand-text">B-Docs</span>
+          <span class="brand-text">Barangay e-Document Request</span>
         </div>
       </router-link>
 
@@ -297,14 +297,16 @@ export default {
 .brand-icon-svg {
   color: #2563eb;
   fill: rgba(37, 99, 235, 0.08);
+  flex-shrink: 0;
 }
 
 .brand-text {
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 1.45rem;
+  font-size: 1.25rem;
   color: #0f172a;
   letter-spacing: -0.5px;
+  line-height: 1.2;
 }
 
 /* Hamburger Menu (Mobile) */
@@ -596,6 +598,9 @@ export default {
 
 /* Mobile Responsiveness */
 @media (max-width: 992px) {
+  .brand-text {
+    font-size: 1.15rem;
+  }
   .navbar-toggler {
     display: block;
   }

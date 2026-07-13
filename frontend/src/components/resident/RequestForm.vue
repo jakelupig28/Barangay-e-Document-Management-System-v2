@@ -155,7 +155,7 @@
 
     <!-- Request Details Modal -->
     <div v-if="selectedRequest" class="modal-overlay" @click.self="closeDetailsModal">
-      <div class="modal-container">
+      <div class="modal-container large-modal">
         <div class="modal-content info-modal">
           <div class="modal-header mb-3">
             <div class="header-main d-flex align-items-center gap-3">
@@ -237,6 +237,54 @@
                     <ul class="m-0 mt-2 ps-3" style="font-size: 0.9rem; line-height: 1.5;" v-else>
                       <li>Bring a valid government-issued ID.</li>
                     </ul>
+                  </div>
+                </div>
+
+                <!-- Timeline Section inside Details Modal -->
+                <div class="modal-timeline-section mt-4">
+                  <h5>Request Timeline</h5>
+                  <div class="modal-timeline">
+                    <!-- Step 1: Submitted -->
+                    <div class="modal-timeline-item active">
+                      <div class="modal-timeline-badge">
+                        <i class="fas fa-paper-plane"></i>
+                      </div>
+                      <div class="modal-timeline-content">
+                        <div class="modal-timeline-title">Request Submitted</div>
+                        <div class="modal-timeline-time">{{ formatRequestDate(selectedRequest.createdAt) }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Step 2: Approved / Rejected / Processing -->
+                    <div :class="['modal-timeline-item', selectedRequest.status !== 'pending' ? 'active' : 'pending']">
+                      <div class="modal-timeline-badge">
+                        <i :class="selectedRequest.status === 'rejected' ? 'fas fa-times-circle' : 'fas fa-check-circle'"></i>
+                      </div>
+                      <div class="modal-timeline-content">
+                        <div class="modal-timeline-title">
+                          <span v-if="selectedRequest.status === 'approved' || selectedRequest.status === 'claimed'">Approved by Staff (Ready for Pickup)</span>
+                          <span v-else-if="selectedRequest.status === 'rejected'">Rejected</span>
+                          <span v-else>Processing (Awaiting Review)</span>
+                        </div>
+                        <div class="modal-timeline-time" v-if="selectedRequest.status !== 'pending'">
+                          {{ formatRequestDate(selectedRequest.approvedAt || selectedRequest.updatedAt) }}
+                        </div>
+                        <div class="modal-timeline-desc" v-else>
+                          Pending approval from Barangay Staff
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Step 3: Claimed -->
+                    <div v-if="selectedRequest.status === 'claimed'" class="modal-timeline-item active">
+                      <div class="modal-timeline-badge">
+                        <i class="fas fa-handshake"></i>
+                      </div>
+                      <div class="modal-timeline-content">
+                        <div class="modal-timeline-title">Document Claimed</div>
+                        <div class="modal-timeline-time">{{ formatRequestDate(selectedRequest.claimedAt || selectedRequest.updatedAt) }}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -367,6 +415,19 @@ export default {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
+      });
+    },
+    formatRequestDate(date) {
+      if (!date) return 'N/A';
+      const d = date?.toDate ? date.toDate() : new Date(date);
+      if (isNaN(d.getTime())) return date;
+      return d.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
       });
     },
     async submitRequest() {
@@ -672,6 +733,15 @@ export default {
 .form-label { font-weight: 600; color: #1f2937; font-size: 0.95rem; }
 
 .select-wrapper { position: relative; }
+
+.select-wrapper .form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none !important;
+  padding-right: 2.5rem;
+}
+
 .form-select,
 .form-input,
 .form-textarea {
@@ -881,5 +951,97 @@ export default {
   .submit-button { font-size: 1rem; padding: .875rem; }
   .success-message h3 { font-size: 1.3rem; }
   .request-id-display { font-size: 1rem; }
+}
+
+.modal-container.large-modal {
+  max-width: 750px;
+}
+
+.modal-timeline-section {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+.modal-timeline-section h5 {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+.modal-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  position: relative;
+  padding-left: 0.5rem;
+}
+.modal-timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background-color: #e2e8f0;
+}
+.modal-timeline-item {
+  display: flex;
+  gap: 1rem;
+  position: relative;
+  z-index: 1;
+}
+.modal-timeline-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+.modal-timeline-item.active .modal-timeline-badge {
+  background-color: #4f46e5;
+  color: white;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+}
+.modal-timeline-item.active.rejected .modal-timeline-badge {
+  background-color: #ef4444;
+  color: white;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+}
+.modal-timeline-item.pending .modal-timeline-badge {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+.modal-timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+}
+.modal-timeline-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+.modal-timeline-item.active .modal-timeline-title {
+  color: #1e293b;
+}
+.modal-timeline-time {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+.modal-timeline-desc {
+  font-size: 0.75rem;
+  color: #d97706;
+  font-style: italic;
 }
 </style>

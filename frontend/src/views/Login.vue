@@ -3,6 +3,7 @@
     <div class="auth-container">
       <!-- Left Side: Branding -->
       <div class="auth-left">
+        <router-link to="/" class="back-link desktop-back-link"><i class="fas fa-arrow-left"></i> Back to Home</router-link>
 
         <div class="brand-showcase">
           <div class="logo-wrapper">
@@ -21,7 +22,7 @@
 
       <!-- Right Side: Form -->
       <div class="auth-right">
-        <router-link to="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</router-link>
+        <router-link to="/" class="back-link mobile-back-link"><i class="fas fa-arrow-left"></i> Back to Home</router-link>
         
         <div class="auth-card">
           <div class="auth-header text-center mb-4">
@@ -278,7 +279,7 @@ export default {
   position: absolute;
   top: 2rem;
   left: 2.5rem;
-  color: #6b7280;
+  color: #cbd5e1;
   text-decoration: none;
   font-weight: 500;
   font-size: 0.95rem;
@@ -286,10 +287,19 @@ export default {
   align-items: center;
   gap: 0.5rem;
   transition: color 0.2s;
+  z-index: 10;
 }
 
-.back-link:hover {
-  color: #1e3a8a;
+.desktop-back-link {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.desktop-back-link:hover {
+  color: #ffffff;
+}
+
+.mobile-back-link {
+  display: none !important;
 }
 
 .auth-card {
@@ -674,8 +684,15 @@ export default {
 
 @media (max-width: 900px) {
   .auth-left { display: none; }
-  .auth-right { padding: 3rem 1.5rem; }
+  .auth-right { padding: 3.5rem 1.5rem 2rem 1.5rem; }
   .auth-container { max-width: 480px; min-height: auto; }
+  .mobile-back-link {
+    display: flex !important;
+    position: absolute;
+    top: 1.25rem;
+    left: 1.5rem;
+    color: #6b7280;
+  }
 }
 
 @media (min-width: 901px) {

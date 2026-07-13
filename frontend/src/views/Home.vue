@@ -2161,7 +2161,48 @@ export default {
   .featured-details-panel {
     height: auto;
   }
+  /* Additional responsiveness for medium screens */
+  .hero-section, .how-it-works-section, .common-services-section, .community-hub-section, .faq-section {
+    padding: 3.5rem 0;
+  }
+  .section-title {
+    font-size: 1.95rem;
+  }
+}
 
+@media (max-width: 576px) {
+  .hero-title {
+    font-size: 1.95rem;
+  }
+  .hero-description {
+    font-size: 0.95rem;
+  }
+  .section-title {
+    font-size: 1.75rem;
+  }
+  .welcome-badge {
+    font-size: 0.7rem;
+    padding: 0.35rem 0.75rem;
+  }
+  .btn-request {
+    width: 100%;
+    justify-content: center;
+  }
+  .track-card {
+    padding: 1.5rem 1rem;
+  }
+  .track-title {
+    font-size: 1.45rem;
+  }
+  .featured-img-wrapper {
+    aspect-ratio: 1.5 / 1;
+  }
+  .featured-details-panel {
+    padding: 1.5rem;
+  }
+  .details-title {
+    font-size: 1.25rem;
+  }
 }
 
 .claim-instructions-box {

@@ -561,6 +561,9 @@ export default {
             }
           });
         }
+
+        // Sort userRequests descending by date so latest is listed first
+        this.userRequests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       } catch (error) {
         console.error("Error fetching user requests:", error);
         this.errorMessage = 'Failed to load your requests. Please try again later.';
